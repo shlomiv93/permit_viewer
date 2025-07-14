@@ -10,13 +10,66 @@ import calendar
 from workalendar.asia import Israel
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
-# הגדרת נתיב מסד הנתונים - עכשיו בתיקיית הפרויקט
-DB_PATH = "licensing_system.db"  # שם קובץ מסד הנתונים בתיקיית הפרויקט
+# הגדרת נתיב מסד הנתונים - בדיקה אם קיים ברנדר
+DB_PATH = os.environ.get('DATABASE_URL', "licensing_system.db")
 
 # יצירת אובייקט לוח שנה ישראלי
 israel_calendar = Israel()
+
+
+def init_database():
+    """יצירת מסד נתונים ריק אם לא קיים"""
+    if not os.path.exists(DB_PATH):
+        print(f"יוצר מסד נתונים חדש ב: {DB_PATH}")
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # יצירת טבלת הפרויקטים
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS projects (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_name TEXT,
+                request_number TEXT,
+                info_file_number TEXT,
+                date TEXT,
+                opening_date TEXT,
+                status_date TEXT,
+                committee_date TEXT,
+                permit_validity_date TEXT,
+                team_leader TEXT,
+                stage TEXT,
+                request_types TEXT,
+                engineer TEXT,
+                management_company TEXT,
+                entrepreneur_name TEXT,
+                architect TEXT,
+                city TEXT,
+                notes TEXT,
+                info_date_extension INTEGER DEFAULT 0,
+                opening_date_extension INTEGER DEFAULT 0,
+                status_date_extension INTEGER DEFAULT 0,
+                committee_date_extension INTEGER DEFAULT 0,
+                permit_validity_date_extension INTEGER DEFAULT 0,
+                city_team TEXT
+            )
+        """)
+        
+        # הוספת נתונים דמה לבדיקה
+        cursor.execute("""
+            INSERT INTO projects (
+                project_name, request_number, info_file_number, date, opening_date,
+                team_leader, stage, engineer, city
+            ) VALUES (
+                'פרויקט לדוגמה', '2024/001', 'TIK001', '2024-01-15', '2024-02-01',
+                'יוסי כהן', 'נפתח לפני החלטת ועדה', 'דנה לוי', 'תל אביב'
+            )
+        """)
+        
+        conn.commit()
+        conn.close()
+        print("מסד הנתונים נוצר בהצלחה")
 
 
 class DatabaseManager:
@@ -25,122 +78,146 @@ class DatabaseManager:
     @staticmethod
     def get_connection():
         """יצירת חיבור למסד הנתונים"""
-        if not os.path.exists(DB_PATH):
-            raise FileNotFoundError(f"מסד הנתונים לא נמצא ב: {DB_PATH}")
-        return sqlite3.connect(DB_PATH)
+        try:
+            return sqlite3.connect(DB_PATH)
+        except Exception as e:
+            print(f"שגיאה בחיבור למסד הנתונים: {e}")
+            # נסה ליצור מסד נתונים חדש
+            init_database()
+            return sqlite3.connect(DB_PATH)
 
     @staticmethod
     def get_all_projects():
         """שליפת כל הפרויקטים"""
-        conn = DatabaseManager.get_connection()
-        cursor = conn.cursor()
+        try:
+            conn = DatabaseManager.get_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT 
-                id, project_name, request_number, info_file_number,
-                date, opening_date, status_date, committee_date, permit_validity_date, 
-                team_leader, stage, request_types, engineer, management_company, 
-                entrepreneur_name, architect, city, notes,
-                info_date_extension, opening_date_extension, status_date_extension,
-                committee_date_extension, permit_validity_date_extension, city_team
-            FROM projects
-            ORDER BY project_name
-        """)
+            cursor.execute("""
+                SELECT 
+                    id, project_name, request_number, info_file_number,
+                    date, opening_date, status_date, committee_date, permit_validity_date, 
+                    team_leader, stage, request_types, engineer, management_company, 
+                    entrepreneur_name, architect, city, notes,
+                    info_date_extension, opening_date_extension, status_date_extension,
+                    committee_date_extension, permit_validity_date_extension, city_team
+                FROM projects
+                ORDER BY project_name
+            """)
 
-        projects = cursor.fetchall()
-        conn.close()
-        return projects
+            projects = cursor.fetchall()
+            conn.close()
+            return projects
+        except Exception as e:
+            print(f"שגיאה בשליפת פרויקטים: {e}")
+            return []
 
     @staticmethod
     def get_projects_by_stage(stage):
         """שליפת פרויקטים לפי שלב"""
-        conn = DatabaseManager.get_connection()
-        cursor = conn.cursor()
+        try:
+            conn = DatabaseManager.get_connection()
+            cursor = conn.cursor()
 
-        if stage == "הכל":
-            return DatabaseManager.get_all_projects()
+            if stage == "הכל":
+                return DatabaseManager.get_all_projects()
 
-        cursor.execute("""
-            SELECT 
-                id, project_name, request_number, info_file_number,
-                date, opening_date, status_date, committee_date, permit_validity_date, 
-                team_leader, stage, request_types, engineer, management_company, 
-                entrepreneur_name, architect, city, notes,
-                info_date_extension, opening_date_extension, status_date_extension,
-                committee_date_extension, permit_validity_date_extension, city_team
-            FROM projects
-            WHERE stage = ?
-            ORDER BY project_name
-        """, (stage,))
+            cursor.execute("""
+                SELECT 
+                    id, project_name, request_number, info_file_number,
+                    date, opening_date, status_date, committee_date, permit_validity_date, 
+                    team_leader, stage, request_types, engineer, management_company, 
+                    entrepreneur_name, architect, city, notes,
+                    info_date_extension, opening_date_extension, status_date_extension,
+                    committee_date_extension, permit_validity_date_extension, city_team
+                FROM projects
+                WHERE stage = ?
+                ORDER BY project_name
+            """, (stage,))
 
-        projects = cursor.fetchall()
-        conn.close()
-        return projects
+            projects = cursor.fetchall()
+            conn.close()
+            return projects
+        except Exception as e:
+            print(f"שגיאה בשליפת פרויקטים לפי שלב: {e}")
+            return []
 
     @staticmethod
     def search_projects(search_term):
         """חיפוש פרויקטים"""
-        conn = DatabaseManager.get_connection()
-        cursor = conn.cursor()
+        try:
+            conn = DatabaseManager.get_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT 
-                id, project_name, request_number, info_file_number,
-                date, opening_date, status_date, committee_date, permit_validity_date, 
-                team_leader, stage, request_types, engineer, management_company, 
-                entrepreneur_name, architect, city, notes,
-                info_date_extension, opening_date_extension, status_date_extension,
-                committee_date_extension, permit_validity_date_extension, city_team
-            FROM projects 
-            WHERE LOWER(project_name) LIKE ? 
-               OR LOWER(request_number) LIKE ?
-               OR LOWER(info_file_number) LIKE ?
-               OR LOWER(city) LIKE ?
-               OR LOWER(engineer) LIKE ?
-               OR LOWER(team_leader) LIKE ?
-               OR LOWER(entrepreneur_name) LIKE ?
-               OR LOWER(architect) LIKE ?
-               OR LOWER(notes) LIKE ?
-            ORDER BY project_name
-        """, tuple([f'%{search_term.lower()}%'] * 9))
+            cursor.execute("""
+                SELECT 
+                    id, project_name, request_number, info_file_number,
+                    date, opening_date, status_date, committee_date, permit_validity_date, 
+                    team_leader, stage, request_types, engineer, management_company, 
+                    entrepreneur_name, architect, city, notes,
+                    info_date_extension, opening_date_extension, status_date_extension,
+                    committee_date_extension, permit_validity_date_extension, city_team
+                FROM projects 
+                WHERE LOWER(project_name) LIKE ? 
+                   OR LOWER(request_number) LIKE ?
+                   OR LOWER(info_file_number) LIKE ?
+                   OR LOWER(city) LIKE ?
+                   OR LOWER(engineer) LIKE ?
+                   OR LOWER(team_leader) LIKE ?
+                   OR LOWER(entrepreneur_name) LIKE ?
+                   OR LOWER(architect) LIKE ?
+                   OR LOWER(notes) LIKE ?
+                ORDER BY project_name
+            """, tuple([f'%{search_term.lower()}%'] * 9))
 
-        projects = cursor.fetchall()
-        conn.close()
-        return projects
+            projects = cursor.fetchall()
+            conn.close()
+            return projects
+        except Exception as e:
+            print(f"שגיאה בחיפוש פרויקטים: {e}")
+            return []
 
     @staticmethod
     def get_team_leaders():
         """שליפת ראשי צוותים"""
-        conn = DatabaseManager.get_connection()
-        cursor = conn.cursor()
+        try:
+            conn = DatabaseManager.get_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT DISTINCT team_leader 
-            FROM projects 
-            WHERE team_leader IS NOT NULL AND team_leader != '' 
-            ORDER BY team_leader
-        """)
+            cursor.execute("""
+                SELECT DISTINCT team_leader 
+                FROM projects 
+                WHERE team_leader IS NOT NULL AND team_leader != '' 
+                ORDER BY team_leader
+            """)
 
-        leaders = [row[0] for row in cursor.fetchall()]
-        conn.close()
-        return leaders
+            leaders = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            return leaders
+        except Exception as e:
+            print(f"שגיאה בשליפת ראשי צוותים: {e}")
+            return []
 
     @staticmethod
     def get_city_teams():
         """שליפת צוותי עירייה"""
-        conn = DatabaseManager.get_connection()
-        cursor = conn.cursor()
+        try:
+            conn = DatabaseManager.get_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT DISTINCT city_team 
-            FROM projects 
-            WHERE city_team IS NOT NULL AND city_team != '' 
-            ORDER BY city_team
-        """)
+            cursor.execute("""
+                SELECT DISTINCT city_team 
+                FROM projects 
+                WHERE city_team IS NOT NULL AND city_team != '' 
+                ORDER BY city_team
+            """)
 
-        teams = [row[0] for row in cursor.fetchall()]
-        conn.close()
-        return teams
+            teams = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            return teams
+        except Exception as e:
+            print(f"שגיאה בשליפת צוותי עירייה: {e}")
+            return []
 
 
 class DateFormatter:
@@ -284,63 +361,71 @@ class ProjectProcessor:
         processed_projects = []
 
         for project in projects:
-            # המרת טאפל לרשימה לשינוי
-            project_data = list(project)
+            try:
+                # המרת טאפל לרשימה לשינוי
+                project_data = list(project)
 
-            # עיצוב תאריכים עם הארכות
-            if project_data[4]:  # date (info date)
-                info_extension = project_data[18] if len(project_data) > 18 and project_data[18] else 0
-                project_data[4] = DateFormatter.format_date_with_extension(project_data[4], info_extension, 'info')
+                # עיצוב תאריכים עם הארכות
+                if project_data[4]:  # date (info date)
+                    info_extension = project_data[18] if len(project_data) > 18 and project_data[18] else 0
+                    project_data[4] = DateFormatter.format_date_with_extension(project_data[4], info_extension, 'info')
 
-            if project_data[5]:  # opening_date
-                opening_extension = project_data[19] if len(project_data) > 19 and project_data[19] else 0
-                project_data[5] = DateFormatter.format_date_with_extension(project_data[5], opening_extension,
-                                                                           'opening')
+                if project_data[5]:  # opening_date
+                    opening_extension = project_data[19] if len(project_data) > 19 and project_data[19] else 0
+                    project_data[5] = DateFormatter.format_date_with_extension(project_data[5], opening_extension,
+                                                                               'opening')
 
-            if project_data[7]:  # committee_date
-                committee_extension = project_data[21] if len(project_data) > 21 and project_data[21] else 0
-                project_data[7] = DateFormatter.format_date_with_extension(project_data[7], committee_extension,
-                                                                           'committee')
+                if project_data[7]:  # committee_date
+                    committee_extension = project_data[21] if len(project_data) > 21 and project_data[21] else 0
+                    project_data[7] = DateFormatter.format_date_with_extension(project_data[7], committee_extension,
+                                                                               'committee')
 
-            if project_data[8]:  # permit_validity_date
-                permit_extension = project_data[22] if len(project_data) > 22 and project_data[22] else 0
-                project_data[8] = DateFormatter.format_date_with_extension(project_data[8], permit_extension, 'permit')
+                if project_data[8]:  # permit_validity_date
+                    permit_extension = project_data[22] if len(project_data) > 22 and project_data[22] else 0
+                    project_data[8] = DateFormatter.format_date_with_extension(project_data[8], permit_extension, 'permit')
 
-            # הוספת סטטוס צביעה
-            project_data.append(ProjectProcessor.get_project_status(project_data))
+                # הוספת סטטוס צביעה
+                project_data.append(ProjectProcessor.get_project_status(project_data))
 
-            processed_projects.append(project_data)
+                processed_projects.append(project_data)
+            except Exception as e:
+                print(f"שגיאה בעיבוד פרויקט: {e}")
+                continue
 
         return processed_projects
 
     @staticmethod
     def get_project_status(project_data):
         """קבלת סטטוס פרויקט לצביעה"""
-        current_stage = project_data[10] if len(project_data) > 10 else ""
-        opening_date = project_data[5] if len(project_data) > 5 else ""
-        committee_date = project_data[7] if len(project_data) > 7 else ""
-        permit_date = project_data[8] if len(project_data) > 8 else ""
-        info_date = project_data[4] if len(project_data) > 4 else ""
+        try:
+            current_stage = project_data[10] if len(project_data) > 10 else ""
+            opening_date = project_data[5] if len(project_data) > 5 else ""
+            committee_date = project_data[7] if len(project_data) > 7 else ""
+            permit_date = project_data[8] if len(project_data) > 8 else ""
+            info_date = project_data[4] if len(project_data) > 4 else ""
 
-        # בדיקת עדיפויות צביעה
-        if current_stage == "נפתח לפני החלטת ועדה":
-            if opening_date and (ProjectProcessor.check_date_approaching_expiry(opening_date, 15) or
-                                 ProjectProcessor.check_date_expired(opening_date)):
+            # בדיקת עדיפויות צביעה
+            if current_stage == "נפתח לפני החלטת ועדה":
+                if opening_date and (ProjectProcessor.check_date_approaching_expiry(opening_date, 15) or
+                                     ProjectProcessor.check_date_expired(opening_date)):
+                    return "approaching"
+
+            if permit_date and ProjectProcessor.check_permit_expired(permit_date):
+                return "warning"
+
+            if opening_date and ProjectProcessor.check_date_approaching_expiry(opening_date, 15):
                 return "approaching"
 
-        if permit_date and ProjectProcessor.check_permit_expired(permit_date):
-            return "warning"
+            if committee_date and ProjectProcessor.check_committee_date_expiring(committee_date):
+                return "committee_expiring"
 
-        if opening_date and ProjectProcessor.check_date_approaching_expiry(opening_date, 15):
-            return "approaching"
+            if info_date and ProjectProcessor.check_info_date_expiring(info_date):
+                return "info_expiring"
 
-        if committee_date and ProjectProcessor.check_committee_date_expiring(committee_date):
-            return "committee_expiring"
-
-        if info_date and ProjectProcessor.check_info_date_expiring(info_date):
-            return "info_expiring"
-
-        return "normal"
+            return "normal"
+        except Exception as e:
+            print(f"שגיאה בקבלת סטטוס פרויקט: {e}")
+            return "normal"
 
     @staticmethod
     def check_date_approaching_expiry(date_str, days_before=15):
@@ -470,6 +555,13 @@ class ProjectProcessor:
             return False
 
 
+# יצירת מסד הנתונים בעת הפעלת האפליקציה
+@app.before_first_request
+def create_database():
+    """יצירת מסד נתונים אם לא קיים"""
+    init_database()
+
+
 # נתיבי האפליקציה
 @app.route('/')
 def index():
@@ -497,6 +589,7 @@ def get_projects():
             'count': len(processed_projects)
         })
     except Exception as e:
+        print(f"שגיאה ב-API פרויקטים: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -513,6 +606,7 @@ def get_team_leaders():
             'team_leaders': leaders
         })
     except Exception as e:
+        print(f"שגיאה ב-API ראשי צוותים: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -529,6 +623,7 @@ def get_city_teams():
             'city_teams': teams
         })
     except Exception as e:
+        print(f"שגיאה ב-API צוותי עירייה: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -566,6 +661,7 @@ def get_projects_by_team_leader(team_leader):
             'count': len(processed_projects)
         })
     except Exception as e:
+        print(f"שגיאה בפרויקטים לפי ראש צוות: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -620,6 +716,7 @@ def get_projects_by_city_team(city_team):
             'inspectors': result
         })
     except Exception as e:
+        print(f"שגיאה בפרויקטים לפי צוות עירייה: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -662,11 +759,44 @@ def export_excel():
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
     except Exception as e:
+        print(f"שגיאה בייצוא לאקסל: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
         }), 500
 
 
+# Health check endpoint for Render
+@app.route('/health')
+def health_check():
+    """בדיקת תקינות השרת"""
+    try:
+        # בדיקה שמסד הנתונים זמין
+        conn = DatabaseManager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM projects")
+        count = cursor.fetchone()[0]
+        conn.close()
+        
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'projects_count': count
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8000)
+    # הכנת מסד הנתונים
+    init_database()
+    
+    # קבלת פורט מהסביבה (Render משתמש בזה)
+    port = int(os.environ.get('PORT', 8000))
+    host = os.environ.get('HOST', '0.0.0.0')
+    
+    # הפעלת השרת
+    app.run(debug=False, host=host, port=port)
