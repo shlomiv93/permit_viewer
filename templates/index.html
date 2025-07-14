@@ -1,1 +1,1103 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>מערכת רישוי - צפייה נייד</title>
 
+    <!-- Bootstrap RTL -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #4776E6;
+            --secondary-color: #8E54E9;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-size: 14px;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+            padding: 0.5rem 1rem;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+            font-size: 1.2rem;
+        }
+
+        .main-container {
+            padding: 1rem 0.5rem;
+        }
+
+        /* כרטיסי פרויקט - תצוגה ייעודית לנייד */
+        .project-card {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-right: 4px solid #ddd;
+        }
+
+        .project-card.status-approaching {
+            border-right-color: #FFB6C1;
+            background-color: #fef9f9;
+        }
+
+        .project-card.status-warning {
+            border-right-color: #ffc107;
+            background-color: #fffdf0;
+        }
+
+        .project-card.status-committee_expiring {
+            border-right-color: #ADD8E6;
+            background-color: #f0f8ff;
+        }
+
+        .project-card.status-info_expiring {
+            border-right-color: #ffeaa7;
+            background-color: #fffef0;
+        }
+
+        .project-header {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+
+        .project-detail {
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+        }
+
+        .project-detail .label {
+            font-weight: bold;
+            color: #666;
+            display: inline-block;
+            min-width: 80px;
+        }
+
+        .project-detail .value {
+            color: #333;
+        }
+
+        /* כפתורים */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border: none;
+            border-radius: 20px;
+            padding: 0.4rem 1rem;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .btn-sm {
+            padding: 0.3rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        /* חיפוש */
+        .search-container {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* סטטיסטיקות */
+        .stats-row {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 0.5rem;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* טאבים מותאמים לנייד */
+        .mobile-tabs {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .mobile-tabs .nav-link {
+            font-size: 0.8rem;
+            padding: 0.5rem 0.8rem;
+            border: none;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .mobile-tabs .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 6px;
+        }
+
+        /* מצב טעינה */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* הסתרת אלמנטים לא חשובים בנייד */
+        @media (max-width: 576px) {
+            .hide-mobile { display: none !important; }
+
+            .project-detail {
+                font-size: 0.85rem;
+            }
+
+            .project-detail .label {
+                min-width: 70px;
+                font-size: 0.8rem;
+            }
+
+            .navbar-brand {
+                font-size: 1rem;
+            }
+        }
+
+        /* אלמנטים נסתרים */
+        .d-none { display: none !important; }
+        .d-block { display: block !important; }
+
+        /* הודעות התראה */
+        .alert {
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        /* כפתור חזרה למעלה */
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+        }
+
+        /* רענון אוטומטי אינדיקטור */
+        .refresh-indicator {
+            position: fixed;
+            top: 60px;
+            right: 10px;
+            background: rgba(71, 118, 230, 0.9);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#" onclick="loadMainView()">
+                <i class="fas fa-building"></i>
+                מערכת רישוי
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="#" onclick="loadMainView()">
+                            <i class="fas fa-home"></i> ראשי
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="#" onclick="loadTeamLeadersView()">
+                            <i class="fas fa-users"></i> ראשי צוותים
+                        </a>
+                    </li>
+                    <li class="nav-item hide-mobile">
+                        <a class="nav-link text-white" href="#" onclick="loadCityTeamsView()">
+                            <i class="fas fa-city"></i> צוותי עירייה
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- רענון אוטומטי אינדיקטור -->
+    <div id="refresh-indicator" class="refresh-indicator">
+        <i class="fas fa-sync-alt fa-spin"></i> מרענן...
+    </div>
+
+    <!-- תוכן ראשי -->
+    <div class="container-fluid main-container">
+        <div id="main-content">
+            <!-- תוכן יטען כאן -->
+        </div>
+
+        <!-- אינדיקטור טעינה -->
+        <div id="loading" class="loading d-none">
+            <div class="spinner"></div>
+            <p>טוען נתונים...</p>
+        </div>
+    </div>
+
+    <!-- כפתור חזרה למעלה -->
+    <button id="back-to-top" class="back-to-top" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // משתני גלובל
+        let currentStage = 'הכל';
+        let allProjects = [];
+        let autoRefreshInterval;
+
+        // התחלת האפליקציה
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMainView();
+            initializeAutoRefresh();
+            initializeBackToTop();
+        });
+
+        // טעינת תצוגה ראשית
+        function loadMainView() {
+            showLoading();
+
+            const mainContent = `
+                <!-- חיפוש -->
+                <div class="search-container">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchInput" placeholder="חיפוש פרויקטים...">
+                        <button class="btn btn-primary" onclick="searchProjects()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="clearSearch()">
+                            <i class="fas fa-times"></i> נקה
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary hide-mobile" onclick="exportToExcel()">
+                            <i class="fas fa-download"></i> ייצוא
+                        </button>
+                    </div>
+                </div>
+
+                <!-- סטטיסטיקות -->
+                <div id="statistics" class="stats-row">
+                    <!-- סטטיסטיקות יטענו כאן -->
+                </div>
+
+                <!-- טאבי שלבים -->
+                <div class="mobile-tabs">
+                    <ul class="nav nav-tabs border-0" id="stageTabs">
+                        <li class="nav-item">
+                            <button class="nav-link active" onclick="loadStage('הכל')">הכל</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" onclick="loadStage('הליך פתיחה')">פתיחה</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" onclick="loadStage('נפתח לפני החלטת ועדה')">לפני ועדה</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" onclick="loadStage('בדיקה סופית')">בדיקה סופית</button>
+                        </li>
+                        <li class="nav-item hide-mobile">
+                            <button class="nav-link" onclick="loadStage('בדיקת תכן')">בדיקת תכן</button>
+                        </li>
+                        <li class="nav-item hide-mobile">
+                            <button class="nav-link" onclick="loadStage('אגרות והשבחה')">אגרות</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" onclick="loadStage('נמסר היתר')">נמסר</button>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- רשימת פרויקטים -->
+                <div id="projects-container">
+                    <!-- פרויקטים יטענו כאן -->
+                </div>
+            `;
+
+            document.getElementById('main-content').innerHTML = mainContent;
+            loadStage('הכל');
+            hideLoading();
+        }
+
+        // טעינת פרויקטים לפי שלב
+        function loadStage(stage) {
+            showLoading();
+            currentStage = stage;
+
+            // עדכון טאב פעיל
+            document.querySelectorAll('#stageTabs .nav-link').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            const targetTab = document.querySelector(`button[onclick="loadStage('${stage}')"]`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            fetch(`/api/projects?stage=${encodeURIComponent(stage)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allProjects = data.projects;
+                        updateProjectsDisplay();
+                        updateStatistics();
+                    } else {
+                        showError('שגיאה בטעינת פרויקטים: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    showError('שגיאה בחיבור לשרת - יש לבדוק שהשרת פועל');
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+
+        // עדכון תצוגת פרויקטים
+        function updateProjectsDisplay() {
+            const container = document.getElementById('projects-container');
+            if (!container) return;
+
+            if (allProjects.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        לא נמצאו פרויקטים בשלב זה
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            allProjects.forEach(project => {
+                const statusClass = project[23] ? `status-${project[23]}` : '';
+
+                html += `
+                    <div class="project-card ${statusClass}">
+                        <div class="project-header">
+                            ${project[1] || 'ללא שם'}
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">מס' בקשה:</span>
+                            <span class="value">${project[2] || '-'}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">תיק מידע:</span>
+                            <span class="value">${project[3] || '-'}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">פתיחת בקשה:</span>
+                            <span class="value">${formatDateForMobile(project[5])}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">שלב:</span>
+                            <span class="value">${project[10] || '-'}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">מהנדס:</span>
+                            <span class="value">${project[12] || '-'}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">ראש צוות:</span>
+                            <span class="value">${project[9] || '-'}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">עיר:</span>
+                            <span class="value">${project[16] || '-'}</span>
+                        </div>
+                        ${project[17] ? `
+                        <div class="project-detail">
+                            <span class="label">הערות:</span>
+                            <span class="value">${project[17]}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // עדכון סטטיסטיקות
+        function updateStatistics() {
+            const statsContainer = document.getElementById('statistics');
+            if (!statsContainer) return;
+
+            const total = allProjects.length;
+            const approaching = allProjects.filter(p => p[23] === 'approaching').length;
+            const warnings = allProjects.filter(p => p[23] === 'warning').length;
+            const committee = allProjects.filter(p => p[23] === 'committee_expiring').length;
+            const info = allProjects.filter(p => p[23] === 'info_expiring').length;
+
+            statsContainer.innerHTML = `
+                <div class="row text-center">
+                    <div class="col-4 col-md-2">
+                        <div class="stat-item">
+                            <div class="stat-number">${total}</div>
+                            <div class="stat-label">סה"כ</div>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <div class="stat-item">
+                            <div class="stat-number" style="color: #dc3545;">${approaching}</div>
+                            <div class="stat-label">דחופים</div>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <div class="stat-item">
+                            <div class="stat-number" style="color: #ffc107;">${warnings}</div>
+                            <div class="stat-label">היתרים</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 hide-mobile">
+                        <div class="stat-item">
+                            <div class="stat-number" style="color: #17a2b8;">${committee}</div>
+                            <div class="stat-label">ועדות</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 hide-mobile">
+                        <div class="stat-item">
+                            <div class="stat-number" style="color: #f39c12;">${info}</div>
+                            <div class="stat-label">תיקי מידע</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // חיפוש פרויקטים
+        function searchProjects() {
+            const searchInput = document.getElementById('searchInput');
+            if (!searchInput) return;
+            
+            const searchTerm = searchInput.value.trim();
+
+            if (!searchTerm) {
+                loadStage(currentStage);
+                return;
+            }
+
+            showLoading();
+
+            fetch(`/api/projects?search=${encodeURIComponent(searchTerm)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allProjects = data.projects;
+                        updateProjectsDisplay();
+                        updateStatistics();
+                    } else {
+                        showError('שגיאה בחיפוש: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    showError('שגיאה בחיבור לשרת');
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+
+        // ניקוי חיפוש
+        function clearSearch() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            loadStage(currentStage);
+        }
+
+        // ייצוא לאקסל
+        function exportToExcel() {
+            window.open(`/export/excel?stage=${encodeURIComponent(currentStage)}`, '_blank');
+        }
+
+        // טעינת תצוגת ראשי צוותים
+        function loadTeamLeadersView() {
+            showLoading();
+
+            fetch('/api/team-leaders')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        generateTeamLeadersView(data.team_leaders);
+                    } else {
+                        showError('שגיאה בטעינת ראשי צוותים: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    showError('שגיאה בחיבור לשרת');
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+
+        // יצירת תצוגת ראשי צוותים
+        function generateTeamLeadersView(teamLeaders) {
+            if (teamLeaders.length === 0) {
+                document.getElementById('main-content').innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        לא נמצאו ראשי צוותים
+                    </div>
+                `;
+                return;
+            }
+
+            let tabsHtml = '<div class="mobile-tabs"><ul class="nav nav-tabs border-0">';
+            let contentHtml = '';
+
+            teamLeaders.forEach((leader, index) => {
+                const activeClass = index === 0 ? 'active' : '';
+
+                tabsHtml += `
+                    <li class="nav-item">
+                        <button class="nav-link ${activeClass}" onclick="loadTeamLeaderProjects('${leader}', ${index})">
+                            ${leader}
+                        </button>
+                    </li>
+                `;
+
+                contentHtml += `
+                    <div id="leader-content-${index}" class="leader-content ${index === 0 ? '' : 'd-none'}">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>טוען פרויקטים של ${leader}...</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            tabsHtml += '</ul></div>';
+
+            const fullHtml = `
+                <div class="mb-3">
+                    <h4><i class="fas fa-users text-primary"></i> ראשי צוותים</h4>
+                </div>
+                ${tabsHtml}
+                ${contentHtml}
+            `;
+
+            document.getElementById('main-content').innerHTML = fullHtml;
+
+            // טעינת פרויקטים של ראש הצוות הראשון
+            if (teamLeaders.length > 0) {
+                loadTeamLeaderProjects(teamLeaders[0], 0);
+            }
+        }
+
+        // טעינת פרויקטים לראש צוות ספציפי
+        function loadTeamLeaderProjects(teamLeader, index) {
+            // עדכון טאב פעיל
+            document.querySelectorAll('.mobile-tabs .nav-link').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            const targetTab = document.querySelector(`button[onclick="loadTeamLeaderProjects('${teamLeader}', ${index})"]`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            // הסתרת כל התוכן והצגת הנוכחי
+            document.querySelectorAll('.leader-content').forEach(content => {
+                content.classList.add('d-none');
+            });
+            const currentContent = document.getElementById(`leader-content-${index}`);
+            if (currentContent) {
+                currentContent.classList.remove('d-none');
+            }
+
+            fetch(`/api/projects/team-leader/${encodeURIComponent(teamLeader)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        generateTeamLeaderProjectsView(data.projects, index);
+                    } else {
+                        const container = document.getElementById(`leader-content-${index}`);
+                        if (container) {
+                            container.innerHTML = `
+                                <div class="alert alert-danger">
+                                    שגיאה בטעינת פרויקטים: ${data.error}
+                                </div>
+                            `;
+                        }
+                    }
+                })
+                .catch(error => {
+                    const container = document.getElementById(`leader-content-${index}`);
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="alert alert-danger">
+                                שגיאה בחיבור לשרת
+                            </div>
+                        `;
+                    }
+                });
+        }
+
+        // יצירת תצוגת פרויקטים לראש צוות
+        function generateTeamLeaderProjectsView(projects, index) {
+            const container = document.getElementById(`leader-content-${index}`);
+            if (!container) return;
+
+            if (projects.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        אין פרויקטים לראש צוות זה
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            projects.forEach(project => {
+                const statusClass = project[23] ? `status-${project[23]}` : '';
+
+                html += `
+                    <div class="project-card ${statusClass}">
+                        <div class="project-header">
+                            ${project[1] || 'ללא שם'}
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">מס' בקשה:</span>
+                            <span class="value">${project[2] || '-'}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">תיק מידע:</span>
+                            <span class="value">${project[3] || '-'}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">תאריך תיק מידע:</span>
+                            <span class="value">${formatDateForMobile(project[4])}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">פתיחת בקשה:</span>
+                            <span class="value">${formatDateForMobile(project[5])}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">שלב:</span>
+                            <span class="value">${project[10] || '-'}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">מהנדס:</span>
+                            <span class="value">${project[12] || '-'}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">עיר:</span>
+                            <span class="value">${project[16] || '-'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // טעינת תצוגת צוותי עירייה
+        function loadCityTeamsView() {
+            showLoading();
+
+            fetch('/api/city-teams')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        generateCityTeamsView(data.city_teams);
+                    } else {
+                        showError('שגיאה בטעינת צוותי עירייה: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    showError('שגיאה בחיבור לשרת');
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+
+        // יצירת תצוגת צוותי עירייה
+        function generateCityTeamsView(cityTeams) {
+            if (cityTeams.length === 0) {
+                document.getElementById('main-content').innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        לא נמצאו צוותי עירייה
+                    </div>
+                `;
+                return;
+            }
+
+            let tabsHtml = '<div class="mobile-tabs"><ul class="nav nav-tabs border-0">';
+            let contentHtml = '';
+
+            cityTeams.forEach((team, index) => {
+                const activeClass = index === 0 ? 'active' : '';
+
+                tabsHtml += `
+                    <li class="nav-item">
+                        <button class="nav-link ${activeClass}" onclick="loadCityTeamProjects('${team}', ${index})">
+                            ${team}
+                        </button>
+                    </li>
+                `;
+
+                contentHtml += `
+                    <div id="team-content-${index}" class="team-content ${index === 0 ? '' : 'd-none'}">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>טוען פרויקטים של צוות ${team}...</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            tabsHtml += '</ul></div>';
+
+            const fullHtml = `
+                <div class="mb-3">
+                    <h4><i class="fas fa-city text-primary"></i> צוותי עירייה</h4>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        מציג פרויקטים בשלבים: "נפתח לפני החלטת ועדה" ו"בדיקה סופית"
+                    </div>
+                </div>
+                ${tabsHtml}
+                ${contentHtml}
+            `;
+
+            document.getElementById('main-content').innerHTML = fullHtml;
+
+            // טעינת פרויקטים של הצוות הראשון
+            if (cityTeams.length > 0) {
+                loadCityTeamProjects(cityTeams[0], 0);
+            }
+        }
+
+        // טעינת פרויקטים לצוות עירייה ספציפי
+        function loadCityTeamProjects(cityTeam, index) {
+            // עדכון טאב פעיל
+            document.querySelectorAll('.mobile-tabs .nav-link').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            const targetTab = document.querySelector(`button[onclick="loadCityTeamProjects('${cityTeam}', ${index})"]`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            // הסתרת כל התוכן והצגת הנוכחי
+            document.querySelectorAll('.team-content').forEach(content => {
+                content.classList.add('d-none');
+            });
+            const currentContent = document.getElementById(`team-content-${index}`);
+            if (currentContent) {
+                currentContent.classList.remove('d-none');
+            }
+
+            fetch(`/api/projects/city-team/${encodeURIComponent(cityTeam)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        generateCityTeamProjectsView(data.inspectors, index);
+                    } else {
+                        const container = document.getElementById(`team-content-${index}`);
+                        if (container) {
+                            container.innerHTML = `
+                                <div class="alert alert-danger">
+                                    שגיאה בטעינת פרויקטים: ${data.error}
+                                </div>
+                            `;
+                        }
+                    }
+                })
+                .catch(error => {
+                    const container = document.getElementById(`team-content-${index}`);
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="alert alert-danger">
+                                שגיאה בחיבור לשרת
+                            </div>
+                        `;
+                    }
+                });
+        }
+
+        // יצירת תצוגת פרויקטים לצוות עירייה
+        function generateCityTeamProjectsView(inspectors, index) {
+            const container = document.getElementById(`team-content-${index}`);
+            if (!container) return;
+
+            if (Object.keys(inspectors).length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        אין בודקים עם פרויקטים בשלבים הרלוונטיים בצוות זה
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+
+            for (const [inspector, projects] of Object.entries(inspectors)) {
+                if (projects.length === 0) continue;
+
+                // ספירת פרויקטים לפי שלב
+                const beforeCommittee = projects.filter(p => p[11] === 'נפתח לפני החלטת ועדה').length;
+                const finalCheck = projects.filter(p => p[11] === 'בדיקה סופית').length;
+
+                html += `
+                    <div class="project-card" style="background-color: #f8f9fa; border-right-color: #6c757d;">
+                        <div class="project-header" style="color: #495057;">
+                            <i class="fas fa-user"></i> בודק: ${inspector}
+                            <div class="mt-2">
+                                <span class="badge bg-danger me-2">${beforeCommittee} לפני ועדה</span>
+                                <span class="badge bg-success">${finalCheck} בדיקה סופית</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // הוספת פרויקטים של הבודק
+                projects.forEach(project => {
+                    const statusClass = project[11] === 'נפתח לפני החלטת ועדה' ? 'status-approaching' : '';
+
+                    html += `
+                        <div class="project-card ${statusClass}" style="margin-right: 1rem;">
+                            <div class="project-header" style="font-size: 1rem;">
+                                ${project[1] || 'ללא שם'}
+                            </div>
+                            <div class="project-detail">
+                                <span class="label">מס' בקשה:</span>
+                                <span class="value">${project[2] || '-'}</span>
+                            </div>
+                            <div class="project-detail">
+                                <span class="label">פתיחת בקשה:</span>
+                                <span class="value">${formatDateForMobile(project[3])}</span>
+                            </div>
+                            <div class="project-detail">
+                                <span class="label">החלטת ועדה:</span>
+                                <span class="value">${formatDateForMobile(project[4])}</span>
+                            </div>
+                            <div class="project-detail">
+                                <span class="label">שלב:</span>
+                                <span class="value">
+                                    <span class="badge ${project[11] === 'נפתח לפני החלטת ועדה' ? 'bg-danger' : 'bg-success'}">
+                                        ${project[11]}
+                                    </span>
+                                </span>
+                            </div>
+                            <div class="project-detail">
+                                <span class="label">ראש צוות:</span>
+                                <span class="value">${project[5] || '-'}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            container.innerHTML = html;
+        }
+
+        // פונקציות עזר
+        function formatDateForMobile(dateStr) {
+            if (!dateStr) return '-';
+            if (dateStr.includes('\n')) {
+                return dateStr.replace(/\n/g, '<br><small>').replace(/\)$/, ')</small>');
+            }
+            return dateStr;
+        }
+
+        function showLoading() {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.remove('d-none');
+            }
+        }
+
+        function hideLoading() {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.add('d-none');
+            }
+        }
+
+        function showError(message) {
+            const alertHtml = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            const mainContent = document.getElementById('main-content');
+            if (mainContent) {
+                mainContent.insertAdjacentHTML('afterbegin', alertHtml);
+            }
+        }
+
+        function showRefreshIndicator() {
+            const indicator = document.getElementById('refresh-indicator');
+            if (indicator) {
+                indicator.style.display = 'block';
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        // רענון אוטומטי
+        function initializeAutoRefresh() {
+            autoRefreshInterval = setInterval(() => {
+                showRefreshIndicator();
+
+                // רענון התצוגה הנוכחית
+                if (typeof currentStage !== 'undefined') {
+                    // טעינה שקטה בלי אינדיקטור טעינה
+                    fetch(`/api/projects?stage=${encodeURIComponent(currentStage)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                allProjects = data.projects;
+                                updateProjectsDisplay();
+                                updateStatistics();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Auto refresh error:', error);
+                        });
+                }
+            }, 300000); // 5 דקות
+        }
+
+        // כפתור חזרה למעלה
+        function initializeBackToTop() {
+            const backToTopBtn = document.getElementById('back-to-top');
+            if (!backToTopBtn) return;
+
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 300) {
+                    backToTopBtn.style.display = 'block';
+                } else {
+                    backToTopBtn.style.display = 'none';
+                }
+            });
+        }
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // תמיכה במקש Enter בחיפוש
+        document.addEventListener('keypress', function(e) {
+            if (e.target.id === 'searchInput' && e.key === 'Enter') {
+                searchProjects();
+            }
+        });
+
+        // מניעת רענון העמוד בטעות (נגיעה כפולה)
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // שמירת מצב הטאבים ברענון
+        window.addEventListener('beforeunload', function() {
+            if (typeof Storage !== "undefined") {
+                sessionStorage.setItem('currentStage', currentStage);
+            }
+        });
+
+        // שחזור מצב הטאבים
+        window.addEventListener('load', function() {
+            if (typeof Storage !== "undefined") {
+                const savedStage = sessionStorage.getItem('currentStage');
+                if (savedStage && savedStage !== 'הכל') {
+                    setTimeout(() => loadStage(savedStage), 1000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
