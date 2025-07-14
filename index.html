@@ -253,6 +253,27 @@
             font-size: 0.7rem;
             z-index: 1000;
         }
+
+        /* אינדיקטור חיבור */
+        .connection-status {
+            position: fixed;
+            top: 60px;
+            left: 10px;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            z-index: 1000;
+        }
+
+        .connection-status.connected {
+            background: rgba(40, 167, 69, 0.9);
+            color: white;
+        }
+
+        .connection-status.error {
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -283,14 +304,24 @@
                             <i class="fas fa-city"></i> צוותי עירייה
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="#" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i> רענן
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
+    <!-- אינדיקטור חיבור -->
+    <div id="connection-status" class="connection-status">
+        <i class="fas fa-wifi"></i> מתחבר...
+    </div>
+
     <!-- אינדיקטור עדכון אחרון -->
     <div id="last-update" class="last-update">
-        עדכון אחרון: <span id="update-time"></span>
+        עדכון אחרון: <span id="update-time">טוען...</span>
     </div>
 
     <!-- תוכן ראשי -->
@@ -302,7 +333,7 @@
         <!-- אינדיקטור טעינה -->
         <div id="loading" class="loading d-none">
             <div class="spinner"></div>
-            <p>טוען נתונים...</p>
+            <p>טוען נתונים ממסד הנתונים...</p>
         </div>
     </div>
 
@@ -315,144 +346,259 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // נתונים סטטיים לדוגמה
-        const mockProjects = [
-            {
-                id: 1,
-                project_name: 'פרויקט מגורים רמת אביב',
-                request_number: '2024/001',
-                info_file_number: 'TIK001',
-                date: '2024-01-15',
-                opening_date: '2024-02-01',
-                status_date: '2024-03-15',
-                committee_date: '2024-04-20',
-                permit_validity_date: '2024-05-10',
-                team_leader: 'יוסי כהן',
-                stage: 'נפתח לפני החלטת ועדה',
-                request_types: 'בנייה חדשה',
-                engineer: 'דנה לוי',
-                management_company: 'שפיר הנדסה',
-                entrepreneur_name: 'אברהם יצחק',
-                architect: 'רון אדריכלים',
-                city: 'תל אביב',
-                notes: 'פרויקט דחוף',
-                city_team: 'צוות א',
-                status: 'approaching'
-            },
-            {
-                id: 2,
-                project_name: 'מתחם מסחרי הרצליה',
-                request_number: '2024/002',
-                info_file_number: 'TIK002',
-                date: '2024-01-20',
-                opening_date: '2024-02-15',
-                status_date: '',
-                committee_date: '2024-05-15',
-                permit_validity_date: '',
-                team_leader: 'מרים גולד',
-                stage: 'בדיקה סופית',
-                request_types: 'שימוש חורג',
-                engineer: 'עמית כהן',
-                management_company: 'כהן ושות',
-                entrepreneur_name: 'חברת בנייה בעמ',
-                architect: 'סטודיו אמ',
-                city: 'הרצליה',
-                notes: '',
-                city_team: 'צוות ב',
-                status: 'normal'
-            },
-            {
-                id: 3,
-                project_name: 'בניין משרדים פתח תקווה',
-                request_number: '2024/003',
-                info_file_number: 'TIK003',
-                date: '2024-02-01',
-                opening_date: '2024-02-20',
-                status_date: '2024-03-01',
-                committee_date: '',
-                permit_validity_date: '2024-06-01',
-                team_leader: 'יוסי כהן',
-                stage: 'נמסר היתר',
-                request_types: 'בנייה חדשה',
-                engineer: 'שרה לוי',
-                management_company: 'א.ב הנדסה',
-                entrepreneur_name: 'דוד מלך',
-                architect: 'זיו אדריכלות',
-                city: 'פתח תקווה',
-                notes: 'פרויקט הושלם',
-                city_team: 'צוות א',
-                status: 'warning'
-            },
-            {
-                id: 4,
-                project_name: 'פרויקט יוקרה רעננה',
-                request_number: '2024/004',
-                info_file_number: 'TIK004',
-                date: '2024-02-10',
-                opening_date: '',
-                status_date: '',
-                committee_date: '',
-                permit_validity_date: '',
-                team_leader: 'מרים גולד',
-                stage: 'הליך פתיחה',
-                request_types: 'תוספת בנייה',
-                engineer: 'רון אבני',
-                management_company: 'גולד הנדסה',
-                entrepreneur_name: 'נחמן בניין',
-                architect: 'בר אדריכלים',
-                city: 'רעננה',
-                notes: 'ממתין לאישורים',
-                city_team: 'צוות ג',
-                status: 'committee_expiring'
-            },
-            {
-                id: 5,
-                project_name: 'מרכז קניות גבעתיים',
-                request_number: '2024/005',
-                info_file_number: 'TIK005',
-                date: '2024-02-15',
-                opening_date: '2024-03-01',
-                status_date: '',
-                committee_date: '2024-06-01',
-                permit_validity_date: '',
-                team_leader: 'דני רוזן',
-                stage: 'בדיקת תכן',
-                request_types: 'שינוי ייעוד',
-                engineer: 'ליאור כהן',
-                management_company: 'רוזן ושות',
-                entrepreneur_name: 'קניונים בעמ',
-                architect: 'אדריכלות מודרנית',
-                city: 'גבעתיים',
-                notes: 'פרויקט מורכב',
-                city_team: 'צוות ב',
-                status: 'info_expiring'
-            }
-        ];
-
+        // הגדרות גלובליות
+        const DATA_SOURCE_URL = './data/projects.json'; // נתיב לקובץ הנתונים בגיט
+        const CSV_SOURCE_URL = './data/projects.csv';   // נתיב אלטרנטיבי לCSV
+        
         // משתני גלובל
         let currentStage = 'הכל';
-        let allProjects = mockProjects;
-        let filteredProjects = mockProjects;
+        let allProjects = [];
+        let filteredProjects = [];
+        let dataSource = 'json'; // או 'csv'
 
         // התחלת האפליקציה
         document.addEventListener('DOMContentLoaded', function() {
-            loadMainView();
+            loadDataFromRepository();
             initializeBackToTop();
-            updateLastUpdateTime();
         });
+
+        // טעינת נתונים מהרפוזיטורי
+        async function loadDataFromRepository() {
+            showLoading();
+            updateConnectionStatus('connecting');
+
+            try {
+                // נסה קודם JSON
+                const response = await fetch(DATA_SOURCE_URL);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    allProjects = processJsonData(data);
+                    dataSource = 'json';
+                    updateConnectionStatus('connected');
+                    showSuccess(`נטענו ${allProjects.length} פרויקטים ממסד הנתונים`);
+                } else {
+                    // אם JSON לא עובד, נסה CSV
+                    await loadFromCSV();
+                }
+                
+                loadMainView();
+                updateLastUpdateTime();
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                
+                // אם גם CSV לא עובד, השתמש בנתונים לדוגמה
+                try {
+                    await loadFromCSV();
+                } catch (csvError) {
+                    console.error('CSV also failed:', csvError);
+                    loadFallbackData();
+                    updateConnectionStatus('error');
+                    showError('לא ניתן לטעון נתונים מהרפוזיטורי. משתמש בנתונים לדוגמה.');
+                }
+                
+                loadMainView();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // טעינה מ-CSV
+        async function loadFromCSV() {
+            const response = await fetch(CSV_SOURCE_URL);
+            
+            if (!response.ok) {
+                throw new Error('CSV not found');
+            }
+            
+            const csvText = await response.text();
+            allProjects = parseCSV(csvText);
+            dataSource = 'csv';
+            updateConnectionStatus('connected');
+            showSuccess(`נטענו ${allProjects.length} פרויקטים מקובץ CSV`);
+        }
+
+        // עיבוד נתוני JSON
+        function processJsonData(data) {
+            // אם הנתונים מגיעים כמערך
+            if (Array.isArray(data)) {
+                return data.map(processProjectRecord);
+            }
+            
+            // אם הנתונים מגיעים כאובייקט עם מפתח projects
+            if (data.projects && Array.isArray(data.projects)) {
+                return data.projects.map(processProjectRecord);
+            }
+            
+            // אם הנתונים מגיעים כאובייקט בודד
+            return [processProjectRecord(data)];
+        }
+
+        // עיבוד רשומת פרויקט יחידה
+        function processProjectRecord(record) {
+            return {
+                id: record.id || record.ID || Math.random(),
+                project_name: record.project_name || record.שם_הפרויקט || record['שם הפרויקט'] || '',
+                request_number: record.request_number || record.מספר_בקשה || record['מס בקשה'] || '',
+                info_file_number: record.info_file_number || record.מספר_תיק_מידע || record['מספר תיק מידע'] || '',
+                date: record.date || record.תאריך || record['תאריך קבלת תיק מידע'] || '',
+                opening_date: record.opening_date || record.תאריך_פתיחה || record['תאריך פתיחת בקשה'] || '',
+                status_date: record.status_date || record.תאריך_סטטוס || record['תאריך סטטוס רישוי'] || '',
+                committee_date: record.committee_date || record.תאריך_ועדה || record['תאריך החלטת ועדה'] || '',
+                permit_validity_date: record.permit_validity_date || record.תאריך_היתר || record['תאריך תוקף היתר'] || '',
+                team_leader: record.team_leader || record.ראש_צוות || record['ראש צוות'] || '',
+                stage: record.stage || record.שלב || record['שלב רישוי'] || '',
+                request_types: record.request_types || record.מהות_בקשה || record['מהות הבקשה'] || '',
+                engineer: record.engineer || record.מהנדס || record['מהנדס רישוי אחראי'] || '',
+                management_company: record.management_company || record.חברת_ניהול || record['חברת ניהול'] || '',
+                entrepreneur_name: record.entrepreneur_name || record.שם_יזם || record['שם היזם'] || '',
+                architect: record.architect || record.אדריכל || record['אדריכל אחראי'] || '',
+                city: record.city || record.עיר || record['עיר'] || '',
+                notes: record.notes || record.הערות || record['הערות'] || '',
+                city_team: record.city_team || record.צוות_עירייה || record['צוות עירייה'] || '',
+                status: calculateProjectStatus(record)
+            };
+        }
+
+        // פענוח CSV
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length < 2) return [];
+            
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            const projects = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                const project = {};
+                
+                headers.forEach((header, index) => {
+                    project[header] = values[index] || '';
+                });
+                
+                projects.push(processProjectRecord(project));
+            }
+            
+            return projects;
+        }
+
+        // חישוב סטטוס פרויקט
+        function calculateProjectStatus(project) {
+            const stage = project.stage || project.שלב || '';
+            const openingDate = project.opening_date || project.תאריך_פתיחה || '';
+            
+            // לוגיקה פשוטה לקביעת סטטוס
+            if (stage === 'נפתח לפני החלטת ועדה') {
+                return 'approaching';
+            }
+            if (stage === 'נמסר היתר' && isDateOld(openingDate, 365)) {
+                return 'warning';
+            }
+            if (stage.includes('ועדה')) {
+                return 'committee_expiring';
+            }
+            if (stage.includes('מידע')) {
+                return 'info_expiring';
+            }
+            
+            return 'normal';
+        }
+
+        // בדיקה אם תאריך ישן
+        function isDateOld(dateStr, days) {
+            if (!dateStr) return false;
+            
+            try {
+                const date = new Date(dateStr);
+                const now = new Date();
+                const diffTime = Math.abs(now - date);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays > days;
+            } catch {
+                return false;
+            }
+        }
+
+        // טעינת נתונים לחלופין
+        function loadFallbackData() {
+            allProjects = [
+                {
+                    id: 1,
+                    project_name: 'פרויקט לדוגמה (נתונים מקומיים)',
+                    request_number: '2024/001',
+                    info_file_number: 'TIK001',
+                    date: '2024-01-15',
+                    opening_date: '2024-02-01',
+                    status_date: '',
+                    committee_date: '',
+                    permit_validity_date: '',
+                    team_leader: 'יוסי כהן',
+                    stage: 'נפתח לפני החלטת ועדה',
+                    request_types: 'בנייה חדשה',
+                    engineer: 'דנה לוי',
+                    management_company: 'שפיר הנדסה',
+                    entrepreneur_name: 'אברהם יצחק',
+                    architect: 'רון אדריכלים',
+                    city: 'תל אביב',
+                    notes: 'נתונים לדוגמה - לא ניתן לטעון ממסד הנתונים',
+                    city_team: 'צוות א',
+                    status: 'approaching'
+                }
+            ];
+        }
+
+        // עדכון סטטוס חיבור
+        function updateConnectionStatus(status) {
+            const indicator = document.getElementById('connection-status');
+            if (!indicator) return;
+
+            indicator.className = `connection-status ${status}`;
+            
+            switch(status) {
+                case 'connecting':
+                    indicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> מתחבר...';
+                    break;
+                case 'connected':
+                    indicator.innerHTML = '<i class="fas fa-check"></i> מחובר';
+                    setTimeout(() => {
+                        indicator.style.display = 'none';
+                    }, 3000);
+                    break;
+                case 'error':
+                    indicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> שגיאה';
+                    break;
+            }
+        }
+
+        // רענון נתונים
+        async function refreshData() {
+            showLoading();
+            await loadDataFromRepository();
+            loadStage(currentStage);
+            hideLoading();
+        }
 
         // עדכון זמן עדכון אחרון
         function updateLastUpdateTime() {
             const now = new Date();
             const timeStr = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('update-time').textContent = timeStr;
+            const updateElement = document.getElementById('update-time');
+            if (updateElement) {
+                updateElement.textContent = timeStr;
+            }
         }
 
         // טעינת תצוגה ראשית
         function loadMainView() {
-            showLoading();
-
             const mainContent = `
+                <!-- אינדיקטור מקור נתונים -->
+                <div class="alert alert-info">
+                    <i class="fas fa-database"></i>
+                    מקור נתונים: ${dataSource === 'json' ? 'קובץ JSON' : dataSource === 'csv' ? 'קובץ CSV' : 'נתונים מקומיים'}
+                    | סה"כ פרויקטים: ${allProjects.length}
+                </div>
+
                 <!-- חיפוש -->
                 <div class="search-container">
                     <div class="input-group">
@@ -465,8 +611,8 @@
                         <button class="btn btn-sm btn-outline-secondary" onclick="clearSearch()">
                             <i class="fas fa-times"></i> נקה
                         </button>
-                        <button class="btn btn-sm btn-outline-success" onclick="addSampleData()">
-                            <i class="fas fa-plus"></i> הוסף נתונים
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i> רענן
                         </button>
                     </div>
                 </div>
@@ -511,45 +657,10 @@
 
             document.getElementById('main-content').innerHTML = mainContent;
             loadStage('הכל');
-            hideLoading();
-        }
-
-        // הוספת נתונים לדוגמה
-        function addSampleData() {
-            const sampleProjects = [
-                {
-                    id: allProjects.length + 1,
-                    project_name: 'פרויקט דוגמה חדש',
-                    request_number: '2024/006',
-                    info_file_number: 'TIK006',
-                    date: '2024-03-01',
-                    opening_date: '2024-03-15',
-                    status_date: '',
-                    committee_date: '',
-                    permit_validity_date: '',
-                    team_leader: 'אבי נחמן',
-                    stage: 'נפתח לפני החלטת ועדה',
-                    request_types: 'בנייה חדשה',
-                    engineer: 'תמר רון',
-                    management_company: 'נחמן הנדסה',
-                    entrepreneur_name: 'חדש בנייה',
-                    architect: 'חדש אדריכלות',
-                    city: 'חולון',
-                    notes: 'פרויקט שנוסף',
-                    city_team: 'צוות ד',
-                    status: 'normal'
-                }
-            ];
-
-            allProjects = [...allProjects, ...sampleProjects];
-            loadStage(currentStage);
-            showSuccess('נוספו נתונים חדשים');
-            updateLastUpdateTime();
         }
 
         // טעינת פרויקטים לפי שלב
         function loadStage(stage) {
-            showLoading();
             currentStage = stage;
 
             // עדכון טאב פעיל
@@ -562,17 +673,14 @@
             }
 
             // סינון פרויקטים
-            setTimeout(() => {
-                if (stage === 'הכל') {
-                    filteredProjects = allProjects;
-                } else {
-                    filteredProjects = allProjects.filter(project => project.stage === stage);
-                }
+            if (stage === 'הכל') {
+                filteredProjects = allProjects;
+            } else {
+                filteredProjects = allProjects.filter(project => project.stage === stage);
+            }
 
-                updateProjectsDisplay();
-                updateStatistics();
-                hideLoading();
-            }, 500);
+            updateProjectsDisplay();
+            updateStatistics();
         }
 
         // עדכון תצוגת פרויקטים
@@ -717,27 +825,22 @@
                 return;
             }
 
-            showLoading();
+            filteredProjects = allProjects.filter(project => {
+                return (
+                    (project.project_name && project.project_name.toLowerCase().includes(searchTerm)) ||
+                    (project.request_number && project.request_number.toLowerCase().includes(searchTerm)) ||
+                    (project.info_file_number && project.info_file_number.toLowerCase().includes(searchTerm)) ||
+                    (project.city && project.city.toLowerCase().includes(searchTerm)) ||
+                    (project.engineer && project.engineer.toLowerCase().includes(searchTerm)) ||
+                    (project.team_leader && project.team_leader.toLowerCase().includes(searchTerm)) ||
+                    (project.entrepreneur_name && project.entrepreneur_name.toLowerCase().includes(searchTerm)) ||
+                    (project.architect && project.architect.toLowerCase().includes(searchTerm)) ||
+                    (project.notes && project.notes.toLowerCase().includes(searchTerm))
+                );
+            });
 
-            setTimeout(() => {
-                filteredProjects = allProjects.filter(project => {
-                    return (
-                        (project.project_name && project.project_name.toLowerCase().includes(searchTerm)) ||
-                        (project.request_number && project.request_number.toLowerCase().includes(searchTerm)) ||
-                        (project.info_file_number && project.info_file_number.toLowerCase().includes(searchTerm)) ||
-                        (project.city && project.city.toLowerCase().includes(searchTerm)) ||
-                        (project.engineer && project.engineer.toLowerCase().includes(searchTerm)) ||
-                        (project.team_leader && project.team_leader.toLowerCase().includes(searchTerm)) ||
-                        (project.entrepreneur_name && project.entrepreneur_name.toLowerCase().includes(searchTerm)) ||
-                        (project.architect && project.architect.toLowerCase().includes(searchTerm)) ||
-                        (project.notes && project.notes.toLowerCase().includes(searchTerm))
-                    );
-                });
-
-                updateProjectsDisplay();
-                updateStatistics();
-                hideLoading();
-            }, 300);
+            updateProjectsDisplay();
+            updateStatistics();
         }
 
         // ניקוי חיפוש
@@ -751,17 +854,8 @@
 
         // טעינת תצוגת ראשי צוותים
         function loadTeamLeadersView() {
-            showLoading();
-
-            setTimeout(() => {
-                const teamLeaders = [...new Set(allProjects.map(p => p.team_leader).filter(Boolean))];
-                generateTeamLeadersView(teamLeaders);
-                hideLoading();
-            }, 300);
-        }
-
-        // יצירת תצוגת ראשי צוותים
-        function generateTeamLeadersView(teamLeaders) {
+            const teamLeaders = [...new Set(allProjects.map(p => p.team_leader).filter(Boolean))];
+            
             if (teamLeaders.length === 0) {
                 document.getElementById('main-content').innerHTML = `
                     <div class="alert alert-warning">
@@ -777,18 +871,19 @@
 
             teamLeaders.forEach((leader, index) => {
                 const activeClass = index === 0 ? 'active' : '';
+                const projects = allProjects.filter(p => p.team_leader === leader);
 
                 tabsHtml += `
                     <li class="nav-item">
                         <button class="nav-link ${activeClass}" onclick="loadTeamLeaderProjects('${leader}', ${index})">
-                            ${leader}
+                            ${leader} (${projects.length})
                         </button>
                     </li>
                 `;
 
                 contentHtml += `
                     <div id="leader-content-${index}" class="leader-content ${index === 0 ? '' : 'd-none'}">
-                        <!-- תוכן יטען כאן -->
+                        ${generateProjectsList(projects)}
                     </div>
                 `;
             });
@@ -804,11 +899,6 @@
             `;
 
             document.getElementById('main-content').innerHTML = fullHtml;
-
-            // טעינת פרויקטים של ראש הצוות הראשון
-            if (teamLeaders.length > 0) {
-                loadTeamLeaderProjects(teamLeaders[0], 0);
-            }
         }
 
         // טעינת פרויקטים לראש צוות ספציפי
@@ -830,81 +920,12 @@
             if (currentContent) {
                 currentContent.classList.remove('d-none');
             }
-
-            const projects = allProjects.filter(p => p.team_leader === teamLeader);
-            generateTeamLeaderProjectsView(projects, index);
-        }
-
-        // יצירת תצוגת פרויקטים לראש צוות
-        function generateTeamLeaderProjectsView(projects, index) {
-            const container = document.getElementById(`leader-content-${index}`);
-            if (!container) return;
-
-            if (projects.length === 0) {
-                container.innerHTML = `
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        אין פרויקטים לראש צוות זה
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            projects.forEach(project => {
-                const statusClass = project.status ? `status-${project.status}` : '';
-
-                html += `
-                    <div class="project-card ${statusClass}">
-                        <div class="project-header">
-                            ${project.project_name || 'ללא שם'}
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">מס' בקשה:</span>
-                            <span class="value">${project.request_number || '-'}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">תיק מידע:</span>
-                            <span class="value">${project.info_file_number || '-'}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">פתיחת בקשה:</span>
-                            <span class="value">${formatDate(project.opening_date)}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">שלב:</span>
-                            <span class="value">
-                                <span class="badge ${getStageColor(project.stage)}">${project.stage || '-'}</span>
-                            </span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">מהנדס:</span>
-                            <span class="value">${project.engineer || '-'}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">עיר:</span>
-                            <span class="value">${project.city || '-'}</span>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
         }
 
         // טעינת תצוגת צוותי עירייה
         function loadCityTeamsView() {
-            showLoading();
-
-            setTimeout(() => {
-                const cityTeams = [...new Set(allProjects.map(p => p.city_team).filter(Boolean))];
-                generateCityTeamsView(cityTeams);
-                hideLoading();
-            }, 300);
-        }
-
-        // יצירת תצוגת צוותי עירייה
-        function generateCityTeamsView(cityTeams) {
+            const cityTeams = [...new Set(allProjects.map(p => p.city_team).filter(Boolean))];
+            
             if (cityTeams.length === 0) {
                 document.getElementById('main-content').innerHTML = `
                     <div class="alert alert-warning">
@@ -920,18 +941,31 @@
 
             cityTeams.forEach((team, index) => {
                 const activeClass = index === 0 ? 'active' : '';
+                const relevantProjects = allProjects.filter(p => 
+                    p.city_team === team && 
+                    (p.stage === 'נפתח לפני החלטת ועדה' || p.stage === 'בדיקה סופית')
+                );
 
                 tabsHtml += `
                     <li class="nav-item">
                         <button class="nav-link ${activeClass}" onclick="loadCityTeamProjects('${team}', ${index})">
-                            ${team}
+                            ${team} (${relevantProjects.length})
                         </button>
                     </li>
                 `;
 
+                // קבוצה לפי מהנדסים
+                const inspectors = {};
+                relevantProjects.forEach(project => {
+                    if (!inspectors[project.engineer]) {
+                        inspectors[project.engineer] = [];
+                    }
+                    inspectors[project.engineer].push(project);
+                });
+
                 contentHtml += `
                     <div id="team-content-${index}" class="team-content ${index === 0 ? '' : 'd-none'}">
-                        <!-- תוכן יטען כאן -->
+                        ${generateInspectorsList(inspectors)}
                     </div>
                 `;
             });
@@ -951,11 +985,6 @@
             `;
 
             document.getElementById('main-content').innerHTML = fullHtml;
-
-            // טעינת פרויקטים של הצוות הראשון
-            if (cityTeams.length > 0) {
-                loadCityTeamProjects(cityTeams[0], 0);
-            }
         }
 
         // טעינת פרויקטים לצוות עירייה ספציפי
@@ -977,37 +1006,62 @@
             if (currentContent) {
                 currentContent.classList.remove('d-none');
             }
-
-            const relevantProjects = allProjects.filter(p => 
-                p.city_team === cityTeam && 
-                (p.stage === 'נפתח לפני החלטת ועדה' || p.stage === 'בדיקה סופית')
-            );
-
-            // קבוצה לפי מהנדסים
-            const inspectors = {};
-            relevantProjects.forEach(project => {
-                if (!inspectors[project.engineer]) {
-                    inspectors[project.engineer] = [];
-                }
-                inspectors[project.engineer].push(project);
-            });
-
-            generateCityTeamProjectsView(inspectors, index);
         }
 
-        // יצירת תצוגת פרויקטים לצוות עירייה
-        function generateCityTeamProjectsView(inspectors, index) {
-            const container = document.getElementById(`team-content-${index}`);
-            if (!container) return;
-
-            if (Object.keys(inspectors).length === 0) {
-                container.innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        אין בודקים עם פרויקטים בשלבים הרלוונטיים בצוות זה
+        // יצירת רשימת פרויקטים
+        function generateProjectsList(projects) {
+            if (projects.length === 0) {
+                return `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        אין פרויקטים
                     </div>
                 `;
-                return;
+            }
+
+            let html = '';
+            projects.forEach(project => {
+                const statusClass = project.status ? `status-${project.status}` : '';
+
+                html += `
+                    <div class="project-card ${statusClass}">
+                        <div class="project-header">
+                            ${project.project_name || 'ללא שם'}
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">מס' בקשה:</span>
+                            <span class="value">${project.request_number || '-'}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">שלב:</span>
+                            <span class="value">
+                                <span class="badge ${getStageColor(project.stage)}">${project.stage || '-'}</span>
+                            </span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">מהנדס:</span>
+                            <span class="value">${project.engineer || '-'}</span>
+                        </div>
+                        <div class="project-detail">
+                            <span class="label">עיר:</span>
+                            <span class="value">${project.city || '-'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            return html;
+        }
+
+        // יצירת רשימת בודקים
+        function generateInspectorsList(inspectors) {
+            if (Object.keys(inspectors).length === 0) {
+                return `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        אין בודקים עם פרויקטים בשלבים הרלוונטיים
+                    </div>
+                `;
             }
 
             let html = '';
@@ -1015,7 +1069,6 @@
             for (const [inspector, projects] of Object.entries(inspectors)) {
                 if (projects.length === 0) continue;
 
-                // ספירת פרויקטים לפי שלב
                 const beforeCommittee = projects.filter(p => p.stage === 'נפתח לפני החלטת ועדה').length;
                 const finalCheck = projects.filter(p => p.stage === 'בדיקה סופית').length;
 
@@ -1031,7 +1084,6 @@
                     </div>
                 `;
 
-                // הוספת פרויקטים של הבודק
                 projects.forEach(project => {
                     const statusClass = project.stage === 'נפתח לפני החלטת ועדה' ? 'status-approaching' : '';
 
@@ -1045,14 +1097,6 @@
                                 <span class="value">${project.request_number || '-'}</span>
                             </div>
                             <div class="project-detail">
-                                <span class="label">פתיחת בקשה:</span>
-                                <span class="value">${formatDate(project.opening_date)}</span>
-                            </div>
-                            <div class="project-detail">
-                                <span class="label">החלטת ועדה:</span>
-                                <span class="value">${formatDate(project.committee_date)}</span>
-                            </div>
-                            <div class="project-detail">
                                 <span class="label">שלב:</span>
                                 <span class="value">
                                     <span class="badge ${project.stage === 'נפתח לפני החלטת ועדה' ? 'bg-danger' : 'bg-success'}">
@@ -1060,23 +1104,18 @@
                                     </span>
                                 </span>
                             </div>
-                            <div class="project-detail">
-                                <span class="label">ראש צוות:</span>
-                                <span class="value">${project.team_leader || '-'}</span>
-                            </div>
                         </div>
                     `;
                 });
             }
 
-            container.innerHTML = html;
+            return html;
         }
 
         // פונקציות עזר
         function formatDate(dateStr) {
             if (!dateStr) return '-';
             
-            // המרת פורמט תאריך מ-YYYY-MM-DD ל-DD/MM/YYYY
             try {
                 const date = new Date(dateStr);
                 return date.toLocaleDateString('he-IL');
@@ -1152,33 +1191,6 @@
         document.addEventListener('keypress', function(e) {
             if (e.target.id === 'searchInput' && e.key === 'Enter') {
                 searchProjects();
-            }
-        });
-
-        // מניעת רענון העמוד בטעות (נגיעה כפולה)
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function (event) {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                event.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
-
-        // שמירת מצב הטאבים ברענון
-        window.addEventListener('beforeunload', function() {
-            if (typeof Storage !== "undefined") {
-                sessionStorage.setItem('currentStage', currentStage);
-            }
-        });
-
-        // שחזור מצב הטאבים
-        window.addEventListener('load', function() {
-            if (typeof Storage !== "undefined") {
-                const savedStage = sessionStorage.getItem('currentStage');
-                if (savedStage && savedStage !== 'הכל') {
-                    setTimeout(() => loadStage(savedStage), 1000);
-                }
             }
         });
     </script>
