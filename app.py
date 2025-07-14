@@ -13,7 +13,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 
 # הגדרת נתיב מסד הנתונים ב-Google Drive
-DB_PATH = r"D:\My Drive\LicensingData\backups\licensing_system.db"
+DB_PATH = r"requirements.txt"
 
 # יצירת אובייקט לוח שנה ישראלי
 israel_calendar = Israel()
