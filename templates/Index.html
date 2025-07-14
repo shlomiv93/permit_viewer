@@ -403,7 +403,10 @@
             document.querySelectorAll('#stageTabs .nav-link').forEach(tab => {
                 tab.classList.remove('active');
             });
-            document.querySelector(`button[onclick="loadStage('${stage}')"]`).classList.add('active');
+            const targetTab = document.querySelector(`button[onclick="loadStage('${stage}')"]`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
 
             fetch(`/api/projects?stage=${encodeURIComponent(stage)}`)
                 .then(response => response.json())
@@ -417,7 +420,7 @@
                     }
                 })
                 .catch(error => {
-                    showError('שגיאה בחיבור לשרת');
+                    showError('שגיאה בחיבור לשרת - יש לבדוק שהשרת פועל');
                     console.error('Error:', error);
                 })
                 .finally(() => {
@@ -539,7 +542,10 @@
 
         // חיפוש פרויקטים
         function searchProjects() {
-            const searchTerm = document.getElementById('searchInput').value.trim();
+            const searchInput = document.getElementById('searchInput');
+            if (!searchInput) return;
+            
+            const searchTerm = searchInput.value.trim();
 
             if (!searchTerm) {
                 loadStage(currentStage);
@@ -569,7 +575,10 @@
 
         // ניקוי חיפוש
         function clearSearch() {
-            document.getElementById('searchInput').value = '';
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.value = '';
+            }
             loadStage(currentStage);
         }
 
@@ -659,13 +668,19 @@
             document.querySelectorAll('.mobile-tabs .nav-link').forEach(tab => {
                 tab.classList.remove('active');
             });
-            document.querySelector(`button[onclick="loadTeamLeaderProjects('${teamLeader}', ${index})"]`).classList.add('active');
+            const targetTab = document.querySelector(`button[onclick="loadTeamLeaderProjects('${teamLeader}', ${index})"]`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
 
             // הסתרת כל התוכן והצגת הנוכחי
             document.querySelectorAll('.leader-content').forEach(content => {
                 content.classList.add('d-none');
             });
-            document.getElementById(`leader-content-${index}`).classList.remove('d-none');
+            const currentContent = document.getElementById(`leader-content-${index}`);
+            if (currentContent) {
+                currentContent.classList.remove('d-none');
+            }
 
             fetch(`/api/projects/team-leader/${encodeURIComponent(teamLeader)}`)
                 .then(response => response.json())
@@ -673,25 +688,32 @@
                     if (data.success) {
                         generateTeamLeaderProjectsView(data.projects, index);
                     } else {
-                        document.getElementById(`leader-content-${index}`).innerHTML = `
-                            <div class="alert alert-danger">
-                                שגיאה בטעינת פרויקטים: ${data.error}
-                            </div>
-                        `;
+                        const container = document.getElementById(`leader-content-${index}`);
+                        if (container) {
+                            container.innerHTML = `
+                                <div class="alert alert-danger">
+                                    שגיאה בטעינת פרויקטים: ${data.error}
+                                </div>
+                            `;
+                        }
                     }
                 })
                 .catch(error => {
-                    document.getElementById(`leader-content-${index}`).innerHTML = `
-                        <div class="alert alert-danger">
-                            שגיאה בחיבור לשרת
-                        </div>
-                    `;
+                    const container = document.getElementById(`leader-content-${index}`);
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="alert alert-danger">
+                                שגיאה בחיבור לשרת
+                            </div>
+                        `;
+                    }
                 });
         }
 
         // יצירת תצוגת פרויקטים לראש צוות
         function generateTeamLeaderProjectsView(projects, index) {
             const container = document.getElementById(`leader-content-${index}`);
+            if (!container) return;
 
             if (projects.length === 0) {
                 container.innerHTML = `
@@ -832,13 +854,19 @@
             document.querySelectorAll('.mobile-tabs .nav-link').forEach(tab => {
                 tab.classList.remove('active');
             });
-            document.querySelector(`button[onclick="loadCityTeamProjects('${cityTeam}', ${index})"]`).classList.add('active');
+            const targetTab = document.querySelector(`button[onclick="loadCityTeamProjects('${cityTeam}', ${index})"]`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
 
             // הסתרת כל התוכן והצגת הנוכחי
             document.querySelectorAll('.team-content').forEach(content => {
                 content.classList.add('d-none');
             });
-            document.getElementById(`team-content-${index}`).classList.remove('d-none');
+            const currentContent = document.getElementById(`team-content-${index}`);
+            if (currentContent) {
+                currentContent.classList.remove('d-none');
+            }
 
             fetch(`/api/projects/city-team/${encodeURIComponent(cityTeam)}`)
                 .then(response => response.json())
@@ -846,25 +874,32 @@
                     if (data.success) {
                         generateCityTeamProjectsView(data.inspectors, index);
                     } else {
-                        document.getElementById(`team-content-${index}`).innerHTML = `
-                            <div class="alert alert-danger">
-                                שגיאה בטעינת פרויקטים: ${data.error}
-                            </div>
-                        `;
+                        const container = document.getElementById(`team-content-${index}`);
+                        if (container) {
+                            container.innerHTML = `
+                                <div class="alert alert-danger">
+                                    שגיאה בטעינת פרויקטים: ${data.error}
+                                </div>
+                            `;
+                        }
                     }
                 })
                 .catch(error => {
-                    document.getElementById(`team-content-${index}`).innerHTML = `
-                        <div class="alert alert-danger">
-                            שגיאה בחיבור לשרת
-                        </div>
-                    `;
+                    const container = document.getElementById(`team-content-${index}`);
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="alert alert-danger">
+                                שגיאה בחיבור לשרת
+                            </div>
+                        `;
+                    }
                 });
         }
 
         // יצירת תצוגת פרויקטים לצוות עירייה
         function generateCityTeamProjectsView(inspectors, index) {
             const container = document.getElementById(`team-content-${index}`);
+            if (!container) return;
 
             if (Object.keys(inspectors).length === 0) {
                 container.innerHTML = `
@@ -948,11 +983,17 @@
         }
 
         function showLoading() {
-            document.getElementById('loading').classList.remove('d-none');
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.remove('d-none');
+            }
         }
 
         function hideLoading() {
-            document.getElementById('loading').classList.add('d-none');
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.add('d-none');
+            }
         }
 
         function showError(message) {
@@ -963,15 +1004,20 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
-            document.getElementById('main-content').insertAdjacentHTML('afterbegin', alertHtml);
+            const mainContent = document.getElementById('main-content');
+            if (mainContent) {
+                mainContent.insertAdjacentHTML('afterbegin', alertHtml);
+            }
         }
 
         function showRefreshIndicator() {
             const indicator = document.getElementById('refresh-indicator');
-            indicator.style.display = 'block';
-            setTimeout(() => {
-                indicator.style.display = 'none';
-            }, 2000);
+            if (indicator) {
+                indicator.style.display = 'block';
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 2000);
+            }
         }
 
         // רענון אוטומטי
@@ -1001,6 +1047,7 @@
         // כפתור חזרה למעלה
         function initializeBackToTop() {
             const backToTopBtn = document.getElementById('back-to-top');
+            if (!backToTopBtn) return;
 
             window.addEventListener('scroll', () => {
                 if (window.pageYOffset > 300) {
@@ -1037,14 +1084,18 @@
 
         // שמירת מצב הטאבים ברענון
         window.addEventListener('beforeunload', function() {
-            sessionStorage.setItem('currentStage', currentStage);
+            if (typeof Storage !== "undefined") {
+                sessionStorage.setItem('currentStage', currentStage);
+            }
         });
 
         // שחזור מצב הטאבים
         window.addEventListener('load', function() {
-            const savedStage = sessionStorage.getItem('currentStage');
-            if (savedStage && savedStage !== 'הכל') {
-                setTimeout(() => loadStage(savedStage), 1000);
+            if (typeof Storage !== "undefined") {
+                const savedStage = sessionStorage.getItem('currentStage');
+                if (savedStage && savedStage !== 'הכל') {
+                    setTimeout(() => loadStage(savedStage), 1000);
+                }
             }
         });
     </script>
