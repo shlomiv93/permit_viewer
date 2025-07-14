@@ -13,7 +13,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 # הגדרת נתיב מסד הנתונים - בדיקה אם קיים ברנדר
-DB_PATH = os.environ.get('DATABASE_URL', "licensing_system.db")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.environ.get('DATABASE_URL', os.path.join(BASE_DIR, 'licensing_system.db'))
+
 
 # יצירת אובייקט לוח שנה ישראלי
 israel_calendar = Israel()
