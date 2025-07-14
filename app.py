@@ -555,13 +555,6 @@ class ProjectProcessor:
             return False
 
 
-# יצירת מסד הנתונים בעת הפעלת האפליקציה
-@app.before_first_request
-def create_database():
-    """יצירת מסד נתונים אם לא קיים"""
-    init_database()
-
-
 # נתיבי האפליקציה
 @app.route('/')
 def index():
