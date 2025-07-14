@@ -12,8 +12,8 @@ from workalendar.asia import Israel
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 
-# הגדרת נתיב מסד הנתונים ב-Google Drive
-DB_PATH = r"requirements.txt"
+# הגדרת נתיב מסד הנתונים - עכשיו בתיקיית הפרויקט
+DB_PATH = "projects.db"  # שם קובץ מסד הנתונים בתיקיית הפרויקט
 
 # יצירת אובייקט לוח שנה ישראלי
 israel_calendar = Israel()
