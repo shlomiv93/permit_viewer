@@ -1,5 +1,5 @@
 Flask==2.3.3
-pandas==2.0.3
+pandas>=2.1.0  # or pandas==2.2.2 for a specific stable version
 openpyxl==3.1.2
 workalendar==17.0.0
 gunicorn==21.2.0
