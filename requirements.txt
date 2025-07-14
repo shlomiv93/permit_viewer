@@ -1,5 +1,5 @@
 flask==3.1.1
 gunicorn==23.0.0
-pandas==2.1.4
-openpyxl==3.1.2
-workalendar==17.0.0
+pandas>=2.2.0
+openpyxl>=3.1.2
+workalendar>=17.0.0
