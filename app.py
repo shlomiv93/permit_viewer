@@ -15,78 +15,111 @@ DATABASE_PATH = os.environ.get('DATABASE_PATH', 'licensing_system.db')
 def get_db_connection():
     """יצירת חיבור למסד הנתונים"""
     try:
+        # וודא שהתיקייה קיימת
+        db_dir = os.path.dirname(DATABASE_PATH) if os.path.dirname(DATABASE_PATH) else '.'
+        if db_dir and db_dir != '.':
+            os.makedirs(db_dir, exist_ok=True)
+        
         conn = sqlite3.connect(DATABASE_PATH)
         conn.row_factory = sqlite3.Row  # מאפשר גישה לעמודות לפי שם
         return conn
     except Exception as e:
         print(f"שגיאה בחיבור למסד הנתונים: {e}")
+        print(f"נתיב מסד הנתונים: {DATABASE_PATH}")
+        import traceback
+        print(traceback.format_exc())
         return None
 
-def create_sample_data():
-    """יצירת נתוני דמו אם המסד ריק"""
-    conn = get_db_connection()
-    if not conn:
-        return
-    
+def create_sample_data_direct(conn):
+    """יצירת נתוני דמו ישירות"""
     try:
         cursor = conn.cursor()
         
-        # בדיקה אם יש נתונים במסד
-        cursor.execute("SELECT COUNT(*) FROM projects")
-        count = cursor.fetchone()[0]
+        sample_projects = [
+            (
+                "פרויקט מגורים דוגמה 1", "2024/001", "INFO-001", "2023-01-15",
+                "2023-02-01", "2023-03-01", "2023-04-01", "2024-01-01",
+                "ישראל כהן", "דנה לוי", "הליך פתיחה", "בנייה חדשה",
+                "חברת ניהול א'", "יוסי פרויקטים", "אדריכל בכיר", "תל אביב",
+                "פרויקט חשוב במיוחד", "מרכז", 0, 0, 0, 0, 0
+            ),
+            (
+                "פרויקט תמא 38 דוגמה", "2024/002", "INFO-002", "2023-06-15",
+                "2023-07-01", "2023-08-01", "2023-09-01", "2024-06-01",
+                "מיכל דוד", "אבי שמש", "נפתח לפני החלטת ועדה", "תמא 38",
+                "חברת ניהול ב'", "שרה בנייה", "אדריכל מומחה", "ירושלים",
+                "דורש בדיקה מיוחדת", "דרום", 0, 0, 0, 0, 0
+            ),
+            (
+                "מגדל מגורים חדש", "2024/003", "INFO-003", "2024-01-10",
+                "2024-02-15", "2024-03-20", "2024-04-25", "2025-01-10",
+                "רונית ברק", "עמית גל", "בדיקה מרחבית אחרי ועדה", "בנייה חדשה",
+                "חברת ניהול ג'", "דוד יזמות", "סטודיו אדריכלות", "חיפה",
+                "פרויקט של 20 קומות", "צפון", 0, 0, 0, 0, 0
+            ),
+            (
+                "פרויקט חידוש עירוני", "2024/004", "INFO-004", "2024-03-01",
+                "2024-04-01", "2024-05-01", "2024-06-01", "2025-03-01",
+                "ליאור זהב", "מיכל רוזן", "בדיקת תכן", "היתר שינויים",
+                "חברת פיתוח ד'", "רחל נכסים", "משרד אדריכלות מוביל", "באר שבע",
+                "פרויקט חידוש אזור מרכזי", "דרום", 30, 0, 0, 60, 0
+            ),
+            (
+                "מתחם מסחרי חדש", "2024/005", "INFO-005", "2024-04-15",
+                "2024-05-15", "2024-06-15", "2024-07-15", "2025-04-15",
+                "ענת שחר", "יונתן כהן", "בדיקה סופית", "בנייה חדשה",
+                "חברת ניהול ה'", "משה יזמות", "אדריכל יצירתי", "נתניה",
+                "מתחם מסחרי ומשרדים", "מרכז", 0, 45, 0, 0, 90
+            ),
+            (
+                "פרויקט תמא 38 מתקדם", "2024/006", "INFO-006", "2024-01-20",
+                "2024-02-20", "2024-03-25", "2024-04-30", "2025-01-20",
+                "אלון ברק", "שירה לוי", "אגרות והשבחה", "תמא 38",
+                "חברת ניהול ו'", "אבי פיתוח", "סטודיו עיצוב", "פתח תקווה",
+                "פרויקט תמא מורכב", "מרכז", 60, 0, 0, 120, 0
+            ),
+            (
+                "בניין מגורים יוקרה", "2024/007", "INFO-007", "2023-12-01",
+                "2024-01-05", "2024-02-10", "2024-03-15", "2024-12-01",
+                "נועה כהן", "רועי דוד", "נמסר היתר", "בנייה חדשה",
+                "חברת פרמיום", "גיל נכסים", "אדריכל מפורסם", "רמת גן",
+                "בניין יוקרה 15 קומות", "מרכז", 0, 0, 0, 0, 180
+            ),
+            (
+                "פרויקט שיקום מבנה", "2024/008", "INFO-008", "2024-05-01",
+                "2024-06-01", "2024-07-01", "2024-08-01", "2025-05-01",
+                "דני שטרן", "מיה אלון", "הליך פתיחה", "היתר שינויים",
+                "חברת שיקום", "לי שימור", "מומחה שימור", "יפו",
+                "שיקום מבנה היסטורי", "מרכז", 0, 15, 0, 0, 0
+            )
+        ]
         
-        if count == 0:
-            # הוספת נתוני דמו
-            sample_projects = [
-                (
-                    "פרויקט מגורים דוגמה 1", "2024/001", "INFO-001", "2023-01-15",
-                    "2023-02-01", "2023-03-01", "2023-04-01", "2024-01-01",
-                    "ישראל כהן", "דנה לוי", "הליך פתיחה", "בנייה חדשה",
-                    "חברת ניהול א'", "יוסי פרויקטים", "אדריכל בכיר", "תל אביב",
-                    "פרויקט חשוב במיוחד", "מרכז", 0, 0, 0, 0, 0
-                ),
-                (
-                    "פרויקט תמא 38 דוגמה", "2024/002", "INFO-002", "2023-06-15",
-                    "2023-07-01", "2023-08-01", "2023-09-01", "2024-06-01",
-                    "מיכל דוד", "אבי שמש", "נפתח לפני החלטת ועדה", "תמא 38",
-                    "חברת ניהול ב'", "שרה בנייה", "אדריכל מומחה", "ירושלים",
-                    "דורש בדיקה מיוחדת", "דרום", 0, 0, 0, 0, 0
-                ),
-                (
-                    "מגדל מגורים חדש", "2024/003", "INFO-003", "2024-01-10",
-                    "2024-02-15", "2024-03-20", "2024-04-25", "2025-01-10",
-                    "רונית ברק", "עמית גל", "בדיקה מרחבית אחרי ועדה", "בנייה חדשה",
-                    "חברת ניהול ג'", "דוד יזמות", "סטודיו אדריכלות", "חיפה",
-                    "פרויקט של 20 קומות", "צפון", 0, 0, 0, 0, 0
-                )
-            ]
-            
-            cursor.executemany("""
-                INSERT INTO projects (
-                    project_name, request_number, info_file_number, date,
-                    opening_date, status_date, committee_date, permit_validity_date,
-                    team_leader, engineer, stage, request_types,
-                    management_company, entrepreneur_name, architect, city,
-                    notes, city_team, info_date_extension, opening_date_extension,
-                    status_date_extension, committee_date_extension, permit_validity_date_extension
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, sample_projects)
-            
-            conn.commit()
-            print("נתוני דמו נוספו למסד הנתונים")
-            
+        cursor.executemany("""
+            INSERT INTO projects (
+                project_name, request_number, info_file_number, date,
+                opening_date, status_date, committee_date, permit_validity_date,
+                team_leader, engineer, stage, request_types,
+                management_company, entrepreneur_name, architect, city,
+                notes, city_team, info_date_extension, opening_date_extension,
+                status_date_extension, committee_date_extension, permit_validity_date_extension
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, sample_projects)
+        
+        conn.commit()
+        print(f"נוספו {len(sample_projects)} פרויקטי דמו למסד הנתונים")
+        
     except Exception as e:
         print(f"שגיאה ביצירת נתוני דמו: {e}")
-    finally:
-        conn.close()
+        import traceback
+        print(traceback.format_exc())
 
 def init_database():
     """אתחול מסד הנתונים"""
-    conn = get_db_connection()
-    if not conn:
-        return
-    
     try:
+        print(f"מאתחל מסד נתונים ב: {DATABASE_PATH}")
+        
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
         # יצירת טבלה אם לא קיימת
@@ -122,13 +155,22 @@ def init_database():
         conn.commit()
         print("מסד הנתונים אותחל בהצלחה")
         
-        # יצירת נתוני דמו אם צריך
-        create_sample_data()
+        # בדיקה אם יש נתונים במסד
+        cursor.execute("SELECT COUNT(*) FROM projects")
+        count = cursor.fetchone()[0]
+        print(f"מספר פרויקטים במסד: {count}")
+        
+        if count == 0:
+            print("מוסיף נתוני דמו...")
+            create_sample_data_direct(conn)
+        
+        conn.close()
+        print("אתחול מסד הנתונים הושלם")
         
     except Exception as e:
         print(f"שגיאה באתחול מסד הנתונים: {e}")
-    finally:
-        conn.close()
+        import traceback
+        print(traceback.format_exc())
 
 @app.route('/')
 def index():
@@ -138,8 +180,10 @@ def index():
 @app.route('/api/projects')
 def get_projects():
     """API לקבלת כל הפרויקטים"""
+    print("מקבל בקשה לפרויקטים...")
     conn = get_db_connection()
     if not conn:
+        print("לא הצלחתי להתחבר למסד הנתונים")
         return jsonify({"error": "שגיאה בחיבור למסד הנתונים"}), 500
     
     try:
@@ -161,10 +205,13 @@ def get_projects():
             project = dict(row)
             projects.append(project)
         
+        print(f"מחזיר {len(projects)} פרויקטים")
         return jsonify(projects)
         
     except Exception as e:
         print(f"שגיאה בקבלת פרויקטים: {e}")
+        import traceback
+        print(traceback.format_exc())
         return jsonify({"error": "שגיאה בקבלת נתונים"}), 500
     finally:
         conn.close()
@@ -282,10 +329,41 @@ def health():
     """endpoint לבדיקת תקינות השרת"""
     return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
 
+@app.route('/debug')
+def debug():
+    """endpoint לדיבאג"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({"error": "לא ניתן להתחבר למסד הנתונים"})
+        
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM projects")
+        count = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cursor.fetchall()]
+        
+        conn.close()
+        
+        return jsonify({
+            "database_path": DATABASE_PATH,
+            "database_exists": os.path.exists(DATABASE_PATH),
+            "project_count": count,
+            "tables": tables,
+            "working_directory": os.getcwd(),
+            "environment": dict(os.environ)
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 if __name__ == '__main__':
+    print("מתחיל השרת...")
     # אתחול מסד הנתונים
     init_database()
     
     # הפעלת השרת
     port = int(os.environ.get('PORT', 5000))
+    print(f"מפעיל שרת על פורט {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
