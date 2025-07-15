@@ -5,12 +5,18 @@ import sqlite3
 import os
 from datetime import datetime, timedelta
 import json
+import sys
 
+# יצירת אפליקציית Flask
 app = Flask(__name__)
 CORS(app)
 
 # הגדרת נתיב למסד הנתונים
 DATABASE_PATH = os.environ.get('DATABASE_PATH', 'licensing_system.db')
+
+print(f"Python version: {sys.version}")
+print(f"Working directory: {os.getcwd()}")
+print(f"Database path: {DATABASE_PATH}")
 
 def get_db_connection():
     """יצירת חיבור למסד הנתונים"""
@@ -172,9 +178,26 @@ def init_database():
         import traceback
         print(traceback.format_exc())
 
+# אתחול מסד הנתונים כשהמודול נטען
+def initialize_on_startup():
+    """אתחול שרץ בעת טעינת המודול"""
+    print("מאתחל מסד נתונים בעת הטעינה...")
+    try:
+        init_database()
+        print("אתחול מסד הנתונים הושלם בהצלחה")
+    except Exception as e:
+        print(f"שגיאה באתחול מסד הנתונים: {e}")
+        import traceback
+        print(traceback.format_exc())
+
+# הפעלת אתחול
+initialize_on_startup()
+
+# Routes
 @app.route('/')
 def index():
     """עמוד בית - הצפיין"""
+    print("מגיש עמוד בית")
     return render_template('index.html')
 
 @app.route('/api/projects')
@@ -459,12 +482,20 @@ def internal_error(error):
     return jsonify({"error": "שגיאה פנימית בשרת", "details": str(error)}), 500
 
 @app.before_request
-def before_request():
-    """הרצה לפני כל בקשה"""
-    print(f"בקשה: {request.method} {request.path}")
+def log_request():
+    """רישום כל בקשה"""
+    print(f"=== בקשה: {request.method} {request.path} ===")
+    print(f"User-Agent: {request.headers.get('User-Agent', 'לא זמין')}")
+    print(f"IP: {request.remote_addr}")
+
+@app.after_request
+def log_response(response):
+    """רישום תגובה"""
+    print(f"=== תגובה: {response.status_code} ===")
+    return response
 
 if __name__ == '__main__':
-    print("מתחיל השרת...")
+    print("מתחיל השרת במצב פיתוח...")
     print(f"תיקיית עבודה: {os.getcwd()}")
     print(f"נתיב מסד נתונים: {DATABASE_PATH}")
     print(f"קבצים בתיקייה: {os.listdir('.')}")
@@ -475,10 +506,22 @@ if __name__ == '__main__':
     else:
         print("מסד הנתונים לא קיים - יווצר אוטומטית")
     
-    # אתחול מסד הנתונים
-    init_database()
-    
     # הפעלת השרת
     port = int(os.environ.get('PORT', 5000))
     print(f"מפעיל שרת על פורט {port}")
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=True)
+else:
+    print("האפליקציה נטענה במצב production")
+    print(f"תיקיית עבודה: {os.getcwd()}")
+    print(f"נתיב מסד נתונים: {DATABASE_PATH}")
+    
+    # רישום routes זמינים
+    print("Routes זמינים:")
+    for rule in app.url_map.iter_rules():
+        print(f"  {rule.rule} -> {rule.endpoint}")
+    
+    # בדיקה אם קובץ מסד הנתונים קיים
+    if os.path.exists(DATABASE_PATH):
+        print(f"מסד הנתונים קיים. גודל: {os.path.getsize(DATABASE_PATH)} בתים")
+    else:
+        print("מסד הנתונים לא קיים - יווצר אוטומטית")
