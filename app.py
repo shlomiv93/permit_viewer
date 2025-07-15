@@ -50,7 +50,9 @@ def get_db_connection():
         print(f"תיקיית עבודה: {os.getcwd()}")
         import traceback
         print(traceback.format_exc())
-        return NoneDATABASE_PATH} לא קיים, מחפש מסד נתונים...")
+        print(f"{DATABASE_PATH} לא קיים, מחפש מסד נתונים...")
+return None
+
             
             # חיפוש אחר קובץ licensing_system.db
             current_dir = os.getcwd()
