@@ -11,8 +11,24 @@ import sys
 app = Flask(__name__)
 CORS(app)
 
-# הגדרת נתיב למסד הנתונים
-DATABASE_PATH = os.environ.get('DATABASE_PATH', 'licensing_system.db')
+# הגדרת נתיב למסד הנתונים - קודם נבדוק אם הקובץ קיים
+def find_database_path():
+    """מחפש את מסד הנתונים במיקומים שונים"""
+    possible_paths = [
+        'licensing_system.db',
+        './licensing_system.db',
+        os.path.join(os.getcwd(), 'licensing_system.db')
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            print(f"מסד נתונים נמצא ב: {path}")
+            return path
+    
+    print("מסד נתונים לא נמצא, יווצר חדש")
+    return 'licensing_system.db'
+
+DATABASE_PATH = find_database_path()
 
 print(f"Python version: {sys.version}")
 print(f"Working directory: {os.getcwd()}")
@@ -21,9 +37,20 @@ print(f"Database path: {DATABASE_PATH}")
 def get_db_connection():
     """יצירת חיבור למסד הנתונים"""
     try:
-        # אם DATABASE_PATH עדיין לא מצביע על קובץ קיים, נחפש אותו
         if not os.path.exists(DATABASE_PATH):
-            print(f"נתיב {DATABASE_PATH} לא קיים, מחפש מסד נתונים...")
+            print(f"מסד הנתונים לא נמצא ב: {DATABASE_PATH}")
+            return None
+            
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row  # מאפשר גישה לעמודות לפי שם
+        return conn
+    except Exception as e:
+        print(f"שגיאה בחיבור למסד הנתונים: {e}")
+        print(f"נתיב מסד הנתונים: {DATABASE_PATH}")
+        print(f"תיקיית עבודה: {os.getcwd()}")
+        import traceback
+        print(traceback.format_exc())
+        return NoneDATABASE_PATH} לא קיים, מחפש מסד נתונים...")
             
             # חיפוש אחר קובץ licensing_system.db
             current_dir = os.getcwd()
@@ -213,32 +240,10 @@ def initialize_on_startup():
         files_in_current = os.listdir('.')
         print(f"קבצים בתיקייה הנוכחית: {files_in_current}")
         
-        # חיפוש אחר קובץ licensing_system.db
-        db_files = [f for f in files_in_current if f.endswith('.db')]
-        print(f"קבצי DB שנמצאו: {db_files}")
-        
-        # בדיקת מיקומים אפשריים
-        possible_paths = [
-            'licensing_system.db',
-            './licensing_system.db',
-            'database/licensing_system.db',
-            'data/licensing_system.db',
-            os.path.join(current_dir, 'licensing_system.db')
-        ]
-        
-        found_db = None
-        for path in possible_paths:
-            if os.path.exists(path):
-                found_db = path
-                size = os.path.getsize(path)
-                print(f"מסד נתונים נמצא ב: {path} (גודל: {size} בתים)")
-                break
-        
-        if found_db:
-            # עדכון הנתיב הגלובלי
-            global DATABASE_PATH
-            DATABASE_PATH = found_db
-            print(f"מעדכן DATABASE_PATH ל: {DATABASE_PATH}")
+        # בדיקת קיום מסד הנתונים
+        if os.path.exists(DATABASE_PATH):
+            size = os.path.getsize(DATABASE_PATH)
+            print(f"מסד נתונים נמצא ב: {DATABASE_PATH} (גודל: {size} בתים)")
             
             # בדיקת תוכן המסד
             conn = sqlite3.connect(DATABASE_PATH)
@@ -258,10 +263,13 @@ def initialize_on_startup():
                 cursor.execute("SELECT project_name, stage FROM projects LIMIT 3")
                 samples = cursor.fetchall()
                 print(f"דוגמאות פרויקטים: {samples}")
+            else:
+                print("טבלת projects לא נמצאה - מאתחל טבלאות...")
+                init_database()
             
             conn.close()
         else:
-            print("לא נמצא מסד נתונים קיים - יווצר חדש")
+            print("מסד נתונים לא נמצא - יווצר חדש")
             init_database()
         
         print("אתחול מסד הנתונים הושלם בהצלחה")
