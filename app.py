@@ -181,6 +181,13 @@ def index():
 def get_projects():
     """API לקבלת כל הפרויקטים"""
     print("מקבל בקשה לפרויקטים...")
+    
+    # בדיקה אם מסד הנתונים קיים
+    if not os.path.exists(DATABASE_PATH):
+        print(f"מסד הנתונים לא נמצא ב: {DATABASE_PATH}")
+        print("מנסה לאתחל מסד הנתונים...")
+        init_database()
+    
     conn = get_db_connection()
     if not conn:
         print("לא הצלחתי להתחבר למסד הנתונים")
@@ -188,6 +195,16 @@ def get_projects():
     
     try:
         cursor = conn.cursor()
+        
+        # בדיקה אם הטבלה קיימת
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='projects'")
+        if not cursor.fetchone():
+            print("טבלת projects לא קיימת - מאתחל מסד נתונים")
+            conn.close()
+            init_database()
+            conn = get_db_connection()
+            cursor = conn.cursor()
+        
         cursor.execute("""
             SELECT 
                 id, project_name, request_number, info_file_number,
@@ -206,15 +223,18 @@ def get_projects():
             projects.append(project)
         
         print(f"מחזיר {len(projects)} פרויקטים")
-        return jsonify(projects)
+        response = jsonify(projects)
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
         
     except Exception as e:
         print(f"שגיאה בקבלת פרויקטים: {e}")
         import traceback
         print(traceback.format_exc())
-        return jsonify({"error": "שגיאה בקבלת נתונים"}), 500
+        return jsonify({"error": "שגיאה בקבלת נתונים", "details": str(e)}), 500
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 @app.route('/api/projects/<int:project_id>')
 def get_project(project_id):
@@ -288,6 +308,7 @@ def get_stats():
 @app.route('/api/filters')
 def get_filters():
     """API לקבלת רשימות לסינון"""
+    print("מקבל בקשה לרשימות סינון...")
     conn = get_db_connection()
     if not conn:
         return jsonify({"error": "שגיאה בחיבור למסד הנתונים"}), 500
@@ -296,38 +317,78 @@ def get_filters():
         cursor = conn.cursor()
         
         # רשימת מהנדסים
-        cursor.execute("SELECT DISTINCT engineer FROM projects WHERE engineer IS NOT NULL ORDER BY engineer")
+        cursor.execute("SELECT DISTINCT engineer FROM projects WHERE engineer IS NOT NULL AND engineer != '' ORDER BY engineer")
         engineers = [row[0] for row in cursor.fetchall()]
         
         # רשימת ראשי צוותים
-        cursor.execute("SELECT DISTINCT team_leader FROM projects WHERE team_leader IS NOT NULL ORDER BY team_leader")
+        cursor.execute("SELECT DISTINCT team_leader FROM projects WHERE team_leader IS NOT NULL AND team_leader != '' ORDER BY team_leader")
         team_leaders = [row[0] for row in cursor.fetchall()]
         
         # רשימת ערים
-        cursor.execute("SELECT DISTINCT city FROM projects WHERE city IS NOT NULL ORDER BY city")
+        cursor.execute("SELECT DISTINCT city FROM projects WHERE city IS NOT NULL AND city != '' ORDER BY city")
         cities = [row[0] for row in cursor.fetchall()]
         
         # רשימת שלבים
-        cursor.execute("SELECT DISTINCT stage FROM projects WHERE stage IS NOT NULL ORDER BY stage")
+        cursor.execute("SELECT DISTINCT stage FROM projects WHERE stage IS NOT NULL AND stage != '' ORDER BY stage")
         stages = [row[0] for row in cursor.fetchall()]
         
-        return jsonify({
+        result = {
             "engineers": engineers,
             "team_leaders": team_leaders,
             "cities": cities,
             "stages": stages
-        })
+        }
+        
+        print(f"מחזיר רשימות סינון: {len(engineers)} מהנדסים, {len(team_leaders)} ראשי צוותים, {len(cities)} ערים, {len(stages)} שלבים")
+        
+        response = jsonify(result)
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
         
     except Exception as e:
         print(f"שגיאה בקבלת רשימות סינון: {e}")
-        return jsonify({"error": "שגיאה בקבלת נתונים"}), 500
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"error": "שגיאה בקבלת נתונים", "details": str(e)}), 500
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 @app.route('/health')
 def health():
     """endpoint לבדיקת תקינות השרת"""
-    return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
+    try:
+        # בדיקה בסיסית
+        status = {"status": "healthy", "timestamp": datetime.now().isoformat()}
+        
+        # בדיקת מסד נתונים
+        if os.path.exists(DATABASE_PATH):
+            conn = get_db_connection()
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM projects")
+                count = cursor.fetchone()[0]
+                status["database"] = "connected"
+                status["projects_count"] = count
+                conn.close()
+            else:
+                status["database"] = "connection_failed"
+        else:
+            status["database"] = "not_found"
+            
+        response = jsonify(status)
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
+        
+    except Exception as e:
+        error_status = {
+            "status": "error", 
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
+        }
+        response = jsonify(error_status)
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response, 500
 
 @app.route('/debug')
 def debug():
@@ -357,6 +418,21 @@ def debug():
         
     except Exception as e:
         return jsonify({"error": str(e)})
+
+@app.errorhandler(404)
+def not_found(error):
+    """טיפול בשגיאות 404"""
+    return jsonify({"error": "הנתיב לא נמצא", "path": request.path}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """טיפול בשגיאות 500"""
+    return jsonify({"error": "שגיאה פנימית בשרת", "details": str(error)}), 500
+
+@app.before_request
+def before_request():
+    """הרצה לפני כל בקשה"""
+    print(f"בקשה: {request.method} {request.path}")
 
 if __name__ == '__main__':
     print("מתחיל השרת...")
