@@ -21,10 +21,30 @@ print(f"Database path: {DATABASE_PATH}")
 def get_db_connection():
     """יצירת חיבור למסד הנתונים"""
     try:
-        # וודא שהתיקייה קיימת
-        db_dir = os.path.dirname(DATABASE_PATH) if os.path.dirname(DATABASE_PATH) else '.'
-        if db_dir and db_dir != '.':
-            os.makedirs(db_dir, exist_ok=True)
+        # אם DATABASE_PATH עדיין לא מצביע על קובץ קיים, נחפש אותו
+        if not os.path.exists(DATABASE_PATH):
+            print(f"נתיב {DATABASE_PATH} לא קיים, מחפש מסד נתונים...")
+            
+            # חיפוש אחר קובץ licensing_system.db
+            current_dir = os.getcwd()
+            possible_paths = [
+                'licensing_system.db',
+                './licensing_system.db',
+                'database/licensing_system.db',
+                'data/licensing_system.db',
+                os.path.join(current_dir, 'licensing_system.db')
+            ]
+            
+            found_db = None
+            for path in possible_paths:
+                if os.path.exists(path):
+                    found_db = path
+                    print(f"מסד נתונים נמצא ב: {path}")
+                    break
+            
+            if found_db:
+                global DATABASE_PATH
+                DATABASE_PATH = found_db
         
         conn = sqlite3.connect(DATABASE_PATH)
         conn.row_factory = sqlite3.Row  # מאפשר גישה לעמודות לפי שם
@@ -32,6 +52,8 @@ def get_db_connection():
     except Exception as e:
         print(f"שגיאה בחיבור למסד הנתונים: {e}")
         print(f"נתיב מסד הנתונים: {DATABASE_PATH}")
+        print(f"תיקיית עבודה: {os.getcwd()}")
+        print(f"קבצים בתיקייה: {os.listdir('.')}")
         import traceback
         print(traceback.format_exc())
         return None
@@ -183,12 +205,77 @@ def initialize_on_startup():
     """אתחול שרץ בעת טעינת המודול"""
     print("מאתחל מסד נתונים בעת הטעינה...")
     try:
-        init_database()
+        # בדיקה מפורטת של מיקום הקובץ
+        current_dir = os.getcwd()
+        print(f"תיקיית עבודה נוכחית: {current_dir}")
+        
+        # בדיקת קבצים בתיקייה הנוכחית
+        files_in_current = os.listdir('.')
+        print(f"קבצים בתיקייה הנוכחית: {files_in_current}")
+        
+        # חיפוש אחר קובץ licensing_system.db
+        db_files = [f for f in files_in_current if f.endswith('.db')]
+        print(f"קבצי DB שנמצאו: {db_files}")
+        
+        # בדיקת מיקומים אפשריים
+        possible_paths = [
+            'licensing_system.db',
+            './licensing_system.db',
+            'database/licensing_system.db',
+            'data/licensing_system.db',
+            os.path.join(current_dir, 'licensing_system.db')
+        ]
+        
+        found_db = None
+        for path in possible_paths:
+            if os.path.exists(path):
+                found_db = path
+                size = os.path.getsize(path)
+                print(f"מסד נתונים נמצא ב: {path} (גודל: {size} בתים)")
+                break
+        
+        if found_db:
+            # עדכון הנתיב הגלובלי
+            global DATABASE_PATH
+            DATABASE_PATH = found_db
+            print(f"מעדכן DATABASE_PATH ל: {DATABASE_PATH}")
+            
+            # בדיקת תוכן המסד
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # בדיקת טבלאות
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [row[0] for row in cursor.fetchall()]
+            print(f"טבלאות במסד: {tables}")
+            
+            if 'projects' in tables:
+                cursor.execute("SELECT COUNT(*) FROM projects")
+                count = cursor.fetchone()[0]
+                print(f"מספר פרויקטים במסד: {count}")
+                
+                # הדפסת דוגמת פרויקט
+                cursor.execute("SELECT project_name, stage FROM projects LIMIT 3")
+                samples = cursor.fetchall()
+                print(f"דוגמאות פרויקטים: {samples}")
+            
+            conn.close()
+        else:
+            print("לא נמצא מסד נתונים קיים - יווצר חדש")
+            init_database()
+        
         print("אתחול מסד הנתונים הושלם בהצלחה")
     except Exception as e:
         print(f"שגיאה באתחול מסד הנתונים: {e}")
         import traceback
         print(traceback.format_exc())
+        
+        # במקרה של שגיאה, נסה ליצור מסד חדש
+        try:
+            print("מנסה ליצור מסד נתונים חדש...")
+            init_database()
+        except Exception as e2:
+            print(f"שגיאה גם ביצירת מסד חדש: {e2}")
 
 # הפעלת אתחול
 initialize_on_startup()
@@ -413,8 +500,46 @@ def health():
         response.headers['Content-Type'] = 'application/json; charset=utf-8'
         return response, 500
 
-@app.route('/debug')
-def debug():
+@app.route('/files')
+def list_files():
+    """endpoint לרשימת קבצים - עזרה לדיבאג"""
+    try:
+        current_dir = os.getcwd()
+        files = {}
+        
+        # קבצים בתיקייה הנוכחית
+        files['current_directory'] = current_dir
+        files['files_in_current'] = os.listdir('.')
+        
+        # חיפוש קבצי DB
+        db_files = []
+        for root, dirs, filenames in os.walk('.'):
+            for filename in filenames:
+                if filename.endswith('.db'):
+                    full_path = os.path.join(root, filename)
+                    size = os.path.getsize(full_path)
+                    db_files.append({
+                        'path': full_path,
+                        'size': size,
+                        'exists': os.path.exists(full_path)
+                    })
+        
+        files['database_files'] = db_files
+        files['current_database_path'] = DATABASE_PATH
+        files['database_exists'] = os.path.exists(DATABASE_PATH)
+        
+        response = jsonify(files)
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
+        
+    except Exception as e:
+        error_info = {
+            "error": str(e),
+            "current_directory": os.getcwd()
+        }
+        response = jsonify(error_info)
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response, 500
     """endpoint לדיבאג"""
     try:
         debug_info = {
