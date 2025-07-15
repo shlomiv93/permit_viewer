@@ -39,19 +39,44 @@ def get_db_connection():
     try:
         if not os.path.exists(DATABASE_PATH):
             print(f"מסד הנתונים לא נמצא ב: {DATABASE_PATH}")
-            return None
+            print(f"{DATABASE_PATH} לא קיים, מחפש מסד נתונים...")
             
+            # חיפוש אחר קובץ licensing_system.db
+            current_dir = os.getcwd()
+            possible_paths = [
+                'licensing_system.db',
+                './licensing_system.db',
+                'database/licensing_system.db',
+                'data/licensing_system.db',
+                os.path.join(current_dir, 'licensing_system.db')
+            ]
+            
+            found_db = None
+            for path in possible_paths:
+                if os.path.exists(path):
+                    found_db = path
+                    print(f"מסד נתונים נמצא ב: {path}")
+                    break
+            
+            if found_db:
+                global DATABASE_PATH
+                DATABASE_PATH = found_db
+            else:
+                print("מסד נתונים לא נמצא בכל המיקומים")
+                return None
+        
         conn = sqlite3.connect(DATABASE_PATH)
         conn.row_factory = sqlite3.Row  # מאפשר גישה לעמודות לפי שם
         return conn
+        
     except Exception as e:
         print(f"שגיאה בחיבור למסד הנתונים: {e}")
         print(f"נתיב מסד הנתונים: {DATABASE_PATH}")
         print(f"תיקיית עבודה: {os.getcwd()}")
+        print(f"קבצים בתיקייה: {os.listdir('.')}")
         import traceback
         print(traceback.format_exc())
-        print(f"{DATABASE_PATH} לא קיים, מחפש מסד נתונים...")
-return None
+        return None
 
             
             # חיפוש אחר קובץ licensing_system.db
@@ -550,6 +575,9 @@ def list_files():
         response = jsonify(error_info)
         response.headers['Content-Type'] = 'application/json; charset=utf-8'
         return response, 500
+
+@app.route('/debug')
+def debug():
     """endpoint לדיבאג"""
     try:
         debug_info = {
