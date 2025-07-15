@@ -299,6 +299,13 @@
             font-size: 1.2rem;
         }
 
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff6b6b;
+            font-size: 1.1rem;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .container {
@@ -410,7 +417,11 @@
 
         <div class="projects-container">
             <div class="project-count" id="projectCount">טוען נתונים...</div>
-            <div class="loading" id="loading">🔄 טוען נתונים...</div>
+            <div class="loading" id="loading">🔄 טוען נתונים מהשרת...</div>
+            <div class="error" id="error" style="display: none;">
+                <p>❌ שגיאה בטעינת הנתונים</p>
+                <button onclick="loadData()" style="margin-top: 10px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">נסה שוב</button>
+            </div>
             <div class="projects-grid" id="projectsGrid" style="display: none;">
                 <!-- Projects will be populated here -->
             </div>
@@ -421,70 +432,6 @@
     </div>
 
     <script>
-        // Mock data for demonstration - replace with actual SQLite data
-        const mockProjects = [
-            {
-                id: 1,
-                project_name: "פרויקט דוגמה 1",
-                request_number: "2024/001",
-                info_file_number: "INFO-001",
-                date: "2023-01-15",
-                opening_date: "2023-02-01",
-                status_date: "2023-03-01",
-                committee_date: "2023-04-01",
-                permit_validity_date: "2024-01-01",
-                team_leader: "ישראל כהן",
-                engineer: "דנה לוי",
-                stage: "הליך פתיחה",
-                request_types: "בנייה חדשה",
-                management_company: "חברת ניהול א'",
-                entrepreneur_name: "יוסי פרויקטים",
-                architect: "אדריכל בכיר",
-                city: "תל אביב",
-                notes: "פרויקט חשוב במיוחד"
-            },
-            {
-                id: 2,
-                project_name: "פרויקט דוגמה 2",
-                request_number: "2024/002",
-                info_file_number: "INFO-002",
-                date: "2023-06-15",
-                opening_date: "2023-07-01",
-                status_date: "2023-08-01",
-                committee_date: "2023-09-01",
-                permit_validity_date: "2024-06-01",
-                team_leader: "מיכל דוד",
-                engineer: "אבי שמש",
-                stage: "נפתח לפני החלטת ועדה",
-                request_types: "תמא 38",
-                management_company: "חברת ניהול ב'",
-                entrepreneur_name: "שרה בנייה",
-                architect: "אדריכל מומחה",
-                city: "ירושלים",
-                notes: "דורש בדיקה מיוחדת"
-            },
-            {
-                id: 3,
-                project_name: "מגדל מגורים חדש",
-                request_number: "2024/003",
-                info_file_number: "INFO-003",
-                date: "2024-01-10",
-                opening_date: "2024-02-15",
-                status_date: "2024-03-20",
-                committee_date: "2024-04-25",
-                permit_validity_date: "2025-01-10",
-                team_leader: "רונית ברק",
-                engineer: "עמית גל",
-                stage: "בדיקה מרחבית אחרי ועדה",
-                request_types: "בנייה חדשה",
-                management_company: "חברת ניהול ג'",
-                entrepreneur_name: "דוד יזמות",
-                architect: "סטודיו אדריכלות",
-                city: "חיפה",
-                notes: "פרויקט של 20 קומות"
-            }
-        ];
-
         const stages = [
             "הכל",
             "הליך פתיחה", 
@@ -497,22 +444,60 @@
         ];
 
         let currentStage = "הכל";
-        let filteredProjects = [...mockProjects];
-        let allProjects = [...mockProjects];
+        let filteredProjects = [];
+        let allProjects = [];
 
         // Initialize the application
-        function init() {
+        async function init() {
             createTabs();
-            populateFilters();
-            updateStats();
-            displayProjects();
+            await loadData();
             setupEventListeners();
-            hideLoading();
+        }
+
+        async function loadData() {
+            try {
+                showLoading();
+                
+                // טעינת כל הפרויקטים
+                const projectsResponse = await fetch('/api/projects');
+                if (!projectsResponse.ok) {
+                    throw new Error('שגיאה בטעינת פרויקטים');
+                }
+                allProjects = await projectsResponse.json();
+                
+                // טעינת רשימות לסינון
+                const filtersResponse = await fetch('/api/filters');
+                if (!filtersResponse.ok) {
+                    throw new Error('שגיאה בטעינת רשימות סינון');
+                }
+                const filters = await filtersResponse.json();
+                
+                populateFilters(filters);
+                filterProjects();
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError();
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('projectsGrid').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
         }
 
         function hideLoading() {
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('projectsGrid').style.display = 'grid';
+        }
+
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('projectsGrid').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
         }
 
         function createTabs() {
@@ -537,18 +522,19 @@
             filterProjects();
         }
 
-        function populateFilters() {
-            const engineers = [...new Set(allProjects.map(p => p.engineer))].sort();
-            const teamLeaders = [...new Set(allProjects.map(p => p.team_leader))].sort();
-            const cities = [...new Set(allProjects.map(p => p.city))].sort();
-
-            populateSelect('engineerFilter', engineers);
-            populateSelect('teamLeaderFilter', teamLeaders);
-            populateSelect('cityFilter', cities);
+        function populateFilters(filters) {
+            populateSelect('engineerFilter', filters.engineers);
+            populateSelect('teamLeaderFilter', filters.team_leaders);
+            populateSelect('cityFilter', filters.cities);
         }
 
         function populateSelect(selectId, options) {
             const select = document.getElementById(selectId);
+            // נקה אופציות קיימות (פרט לראשונה)
+            while (select.children.length > 1) {
+                select.removeChild(select.lastChild);
+            }
+            
             options.forEach(option => {
                 if (option) {
                     const opt = document.createElement('option');
@@ -645,48 +631,48 @@
             card.className = `project-card ${getProjectStatus(project)}`;
 
             card.innerHTML = `
-                <div class="project-title">${project.project_name}</div>
+                <div class="project-title">${project.project_name || 'ללא שם'}</div>
                 
                 <div class="project-info">
                     <div class="info-item">
                         <div class="info-label">מס' בקשה</div>
-                        <div class="info-value">${project.request_number}</div>
+                        <div class="info-value">${project.request_number || 'לא צוין'}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">מס' תיק מידע</div>
-                        <div class="info-value">${project.info_file_number}</div>
+                        <div class="info-value">${project.info_file_number || 'לא צוין'}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">שלב רישוי</div>
-                        <div class="info-value">${project.stage}</div>
+                        <div class="info-value">${project.stage || 'לא צוין'}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">מהות הבקשה</div>
-                        <div class="info-value">${project.request_types}</div>
+                        <div class="info-value">${project.request_types || 'לא צוין'}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">מהנדס רישוי</div>
-                        <div class="info-value">${project.engineer}</div>
+                        <div class="info-value">${project.engineer || 'לא צוין'}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">ראש צוות</div>
-                        <div class="info-value">${project.team_leader}</div>
+                        <div class="info-value">${project.team_leader || 'לא צוין'}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">חברת ניהול</div>
-                        <div class="info-value">${project.management_company}</div>
+                        <div class="info-value">${project.management_company || 'לא צוין'}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">יזם</div>
-                        <div class="info-value">${project.entrepreneur_name}</div>
+                        <div class="info-value">${project.entrepreneur_name || 'לא צוין'}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">אדריכל</div>
-                        <div class="info-value">${project.architect}</div>
+                        <div class="info-value">${project.architect || 'לא צוין'}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">עיר</div>
-                        <div class="info-value">${project.city}</div>
+                        <div class="info-value">${project.city || 'לא צוין'}</div>
                     </div>
                 </div>
 
@@ -843,25 +829,6 @@
 
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', init);
-
-        // Add this section at the end to demonstrate how to load real data
-        /*
-        // Real implementation would connect to your SQLite database
-        // You would need a backend API to serve the data
-        async function loadRealData() {
-            try {
-                const response = await fetch('/api/projects');
-                const data = await response.json();
-                allProjects = data;
-                filteredProjects = [...allProjects];
-                populateFilters();
-                displayProjects();
-                updateStats();
-            } catch (error) {
-                console.error('Error loading data:', error);
-            }
-        }
-        */
     </script>
 </body>
 </html>
