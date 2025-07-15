@@ -1,336 +1,894 @@
-# app.py - שרת Flask לפריסה ב-Render
-from flask import Flask, render_template, jsonify, request
-from flask_cors import CORS
-import sqlite3
-import os
-from datetime import datetime, timedelta
-import json
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>צפיין מערכת רישוי</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-app = Flask(__name__)
-CORS(app)
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            direction: rtl;
+            color: #333;
+        }
 
-# הגדרת נתיב למסד הנתונים
-DATABASE_PATH = os.environ.get('DATABASE_PATH', 'licensing_system.db')
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-def get_db_connection():
-    """יצירת חיבור למסד הנתונים"""
-    try:
-        # וודא שהתיקייה קיימת
-        db_dir = os.path.dirname(DATABASE_PATH) if os.path.dirname(DATABASE_PATH) else '.'
-        os.makedirs(db_dir, exist_ok=True)
-        
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row  # מאפשר גישה לעמודות לפי שם
-        return conn
-    except Exception as e:
-        print(f"שגיאה בחיבור למסד הנתונים: {e}")
-        print(f"נתיב מסד הנתונים: {DATABASE_PATH}")
-        print(f"תיקייה קיימת: {os.path.exists(os.path.dirname(DATABASE_PATH))}")
-        import traceback
-        print(traceback.format_exc())
-        return None
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
 
-def create_sample_data_direct(conn):
-    """יצירת נתוני דמו ישירות"""
-    try:
-        cursor = conn.cursor()
-        
-        sample_projects = [
-            (
-                "פרויקט מגורים דוגמה 1", "2024/001", "INFO-001", "2023-01-15",
-                "2023-02-01", "2023-03-01", "2023-04-01", "2024-01-01",
-                "ישראל כהן", "דנה לוי", "הליך פתיחה", "בנייה חדשה",
-                "חברת ניהול א'", "יוסי פרויקטים", "אדריכל בכיר", "תל אביב",
-                "פרויקט חשוב במיוחד", "מרכז", 0, 0, 0, 0, 0
-            ),
-            (
-                "פרויקט תמא 38 דוגמה", "2024/002", "INFO-002", "2023-06-15",
-                "2023-07-01", "2023-08-01", "2023-09-01", "2024-06-01",
-                "מיכל דוד", "אבי שמש", "נפתח לפני החלטת ועדה", "תמא 38",
-                "חברת ניהול ב'", "שרה בנייה", "אדריכל מומחה", "ירושלים",
-                "דורש בדיקה מיוחדת", "דרום", 0, 0, 0, 0, 0
-            ),
-            (
-                "מגדל מגורים חדש", "2024/003", "INFO-003", "2024-01-10",
-                "2024-02-15", "2024-03-20", "2024-04-25", "2025-01-10",
-                "רונית ברק", "עמית גל", "בדיקה מרחבית אחרי ועדה", "בנייה חדשה",
-                "חברת ניהול ג'", "דוד יזמות", "סטודיו אדריכלות", "חיפה",
-                "פרויקט של 20 קומות", "צפון", 0, 0, 0, 0, 0
-            ),
-            (
-                "פרויקט חידוש עירוני", "2024/004", "INFO-004", "2024-03-01",
-                "2024-04-01", "2024-05-01", "2024-06-01", "2025-03-01",
-                "ליאור זהב", "מיכל רוזן", "בדיקת תכן", "היתר שינויים",
-                "חברת פיתוח ד'", "רחל נכסים", "משרד אדריכלות מוביל", "באר שבע",
-                "פרויקט חידוש אזור מרכזי", "דרום", 30, 0, 0, 60, 0
-            ),
-            (
-                "מתחם מסחרי חדש", "2024/005", "INFO-005", "2024-04-15",
-                "2024-05-15", "2024-06-15", "2024-07-15", "2025-04-15",
-                "ענת שחר", "יונתן כהן", "בדיקה סופית", "בנייה חדשה",
-                "חברת ניהול ה'", "משה יזמות", "אדריכל יצירתי", "נתניה",
-                "מתחם מסחרי ומשרדים", "מרכז", 0, 45, 0, 0, 90
-            ),
-            (
-                "פרויקט תמא 38 מתקדם", "2024/006", "INFO-006", "2024-01-20",
-                "2024-02-20", "2024-03-25", "2024-04-30", "2025-01-20",
-                "אלון ברק", "שירה לוי", "אגרות והשבחה", "תמא 38",
-                "חברת ניהול ו'", "אבי פיתוח", "סטודיו עיצוב", "פתח תקווה",
-                "פרויקט תמא מורכב", "מרכז", 60, 0, 0, 120, 0
-            ),
-            (
-                "בניין מגורים יוקרה", "2024/007", "INFO-007", "2023-12-01",
-                "2024-01-05", "2024-02-10", "2024-03-15", "2024-12-01",
-                "נועה כהן", "רועי דוד", "נמסר היתר", "בנייה חדשה",
-                "חברת פרמיום", "גיל נכסים", "אדריכל מפורסם", "רמת גן",
-                "בניין יוקרה 15 קומות", "מרכז", 0, 0, 0, 0, 180
-            ),
-            (
-                "פרויקט שיקום מבנה", "2024/008", "INFO-008", "2024-05-01",
-                "2024-06-01", "2024-07-01", "2024-08-01", "2025-05-01",
-                "דני שטרן", "מיה אלון", "הליך פתיחה", "היתר שינויים",
-                "חברת שיקום", "לי שימור", "מומחה שימור", "יפו",
-                "שיקום מבנה היסטורי", "מרכז", 0, 15, 0, 0, 0
-            )
-        ]
-        
-        cursor.executemany("""
-            INSERT INTO projects (
-                project_name, request_number, info_file_number, date,
-                opening_date, status_date, committee_date, permit_validity_date,
-                team_leader, engineer, stage, request_types,
-                management_company, entrepreneur_name, architect, city,
-                notes, city_team, info_date_extension, opening_date_extension,
-                status_date_extension, committee_date_extension, permit_validity_date_extension
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, sample_projects)
-        
-        conn.commit()
-        print(f"נוספו {len(sample_projects)} פרויקטי דמו למסד הנתונים")
-        
-    except Exception as e:
-        print(f"שגיאה ביצירת נתוני דמו: {e}")
-        import traceback
-        print(traceback.format_exc())
+        .header h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 2rem;
+        }
 
-def init_database():
-    """אתחול מסד הנתונים"""
-    try:
-        # נוודא שהתיקייה קיימת
-        db_dir = os.path.dirname(DATABASE_PATH) if os.path.dirname(DATABASE_PATH) else '.'
-        os.makedirs(db_dir, exist_ok=True)
-        
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        print(f"מתחבר למסד נתונים ב: {DATABASE_PATH}")
-        
-        # יצירת טבלה אם לא קיימת
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS projects (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                project_name TEXT NOT NULL,
-                request_number TEXT NOT NULL,
-                info_file_number TEXT NOT NULL,
-                date TEXT NOT NULL,
-                opening_date TEXT,
-                status_date TEXT,
-                committee_date TEXT,
-                permit_validity_date TEXT,
-                team_leader TEXT NOT NULL,
-                engineer TEXT NOT NULL,
-                stage TEXT NOT NULL,
-                request_types TEXT,
-                management_company TEXT,
-                entrepreneur_name TEXT,
-                architect TEXT,
-                city TEXT,
-                notes TEXT,
-                city_team TEXT,
-                info_date_extension INTEGER DEFAULT 0,
-                opening_date_extension INTEGER DEFAULT 0,
-                status_date_extension INTEGER DEFAULT 0,
-                committee_date_extension INTEGER DEFAULT 0,
-                permit_validity_date_extension INTEGER DEFAULT 0
-            )
-        """)
-        
-        conn.commit()
-        print("מסד הנתונים אותחל בהצלחה")
-        
-        # בדיקה אם יש נתונים במסד
-        cursor.execute("SELECT COUNT(*) FROM projects")
-        count = cursor.fetchone()[0]
-        print(f"מספר פרויקטים במסד: {count}")
-        
-        if count == 0:
-            print("מוסיף נתוני דמו...")
-            create_sample_data_direct(conn)
-        
-        conn.close()
-        
-    except Exception as e:
-        print(f"שגיאה באתחול מסד הנתונים: {e}")
-        import traceback
-        print(traceback.format_exc())
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
 
-@app.route('/')
-def index():
-    """עמוד בית - הצפיין"""
-    return render_template('index.html')
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
 
-@app.route('/api/projects')
-def get_projects():
-    """API לקבלת כל הפרויקטים"""
-    conn = get_db_connection()
-    if not conn:
-        return jsonify({"error": "שגיאה בחיבור למסד הנתונים"}), 500
-    
-    try:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT 
-                id, project_name, request_number, info_file_number,
-                date, opening_date, status_date, committee_date, permit_validity_date,
-                team_leader, engineer, stage, request_types,
-                management_company, entrepreneur_name, architect, city, notes,
-                city_team, info_date_extension, opening_date_extension,
-                status_date_extension, committee_date_extension, permit_validity_date_extension
-            FROM projects
-            ORDER BY project_name
-        """)
-        
-        projects = []
-        for row in cursor.fetchall():
-            project = dict(row)
-            projects.append(project)
-        
-        return jsonify(projects)
-        
-    except Exception as e:
-        print(f"שגיאה בקבלת פרויקטים: {e}")
-        return jsonify({"error": "שגיאה בקבלת נתונים"}), 500
-    finally:
-        conn.close()
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
 
-@app.route('/api/projects/<int:project_id>')
-def get_project(project_id):
-    """API לקבלת פרויקט ספציפי"""
-    conn = get_db_connection()
-    if not conn:
-        return jsonify({"error": "שגיאה בחיבור למסד הנתונים"}), 500
-    
-    try:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT * FROM projects WHERE id = ?
-        """, (project_id,))
-        
-        row = cursor.fetchone()
-        if row:
-            project = dict(row)
-            return jsonify(project)
-        else:
-            return jsonify({"error": "פרויקט לא נמצא"}), 404
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            background: transparent;
+            color: #666;
+            transition: all 0.3s;
+            border: none;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .tab:hover:not(.active) {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .projects-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .project-count {
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .projects-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-right: 5px solid #667eea;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .project-card.expired {
+            border-right-color: #ff6b6b;
+            background: linear-gradient(135deg, #fff 0%, #ffe0e0 100%);
+        }
+
+        .project-card.warning {
+            border-right-color: #feca57;
+            background: linear-gradient(135deg, #fff 0%, #fff9e0 100%);
+        }
+
+        .project-card.approaching {
+            border-right-color: #ff9ff3;
+            background: linear-gradient(135deg, #fff 0%, #ffe0fc 100%);
+        }
+
+        .project-card.committee_expiring {
+            border-right-color: #54a0ff;
+            background: linear-gradient(135deg, #fff 0%, #e0f0ff 100%);
+        }
+
+        .project-card.info_expiring {
+            border-right-color: #ff9500;
+            background: linear-gradient(135deg, #fff 0%, #ffe8d4 100%);
+        }
+
+        .project-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .project-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .project-dates {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .dates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .date-item {
+            background: white;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .date-label {
+            font-size: 0.8rem;
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .date-value {
+            font-size: 0.9rem;
+            color: #333;
+            white-space: pre-line;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff6b6b;
+            font-size: 1.1rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                flex: none;
+                padding: 12px;
+            }
+
+            .project-info {
+                grid-template-columns: 1fr;
+            }
+
+            .dates-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .legend {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 צפיין מערכת רישוי</h1>
+            <div class="stats" id="stats">
+                <!-- Statistics will be populated here -->
+            </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label for="searchInput">🔍 חיפוש</label>
+                <input type="text" id="searchInput" placeholder="חפש לפי שם פרויקט, מס' בקשה או עיר...">
+            </div>
+            <div class="filter-group">
+                <label for="engineerFilter">👨‍💼 מהנדס רישוי</label>
+                <select id="engineerFilter">
+                    <option value="">כל המהנדסים</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="teamLeaderFilter">👥 ראש צוות</label>
+                <select id="teamLeaderFilter">
+                    <option value="">כל ראשי הצוותים</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="cityFilter">🏙️ עיר</label>
+                <select id="cityFilter">
+                    <option value="">כל הערים</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff6b6b;"></div>
+                <span>תאריך פתיחת בקשה פג תוקף</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #feca57;"></div>
+                <span>תאריך תוקף היתר פג</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff9ff3;"></div>
+                <span>תאריך פתיחה מתקרב לפקיעה</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #54a0ff;"></div>
+                <span>תאריך ועדה מתקרב לפקיעה</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff9500;"></div>
+                <span>תיק מידע מתקרב לפקיעה</span>
+            </div>
+        </div>
+
+        <div class="tabs" id="tabs">
+            <!-- Tabs will be populated here -->
+        </div>
+
+        <div class="projects-container">
+            <div class="project-count" id="projectCount">טוען נתונים...</div>
+            <div class="loading" id="loading">🔄 טוען נתונים מהשרת...</div>
+            <div class="error" id="error" style="display: none;">
+                <p>❌ שגיאה בטעינת הנתונים</p>
+                <p>אנא בדוק את החיבור לשרת ונסה שוב</p>
+                <button onclick="location.reload()" style="margin-top: 10px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">רענן דף</button>
+                <button onclick="testConnection()" style="margin-top: 10px; margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">בדוק חיבור</button>
+            </div>
+            <div class="projects-grid" id="projectsGrid" style="display: none;">
+                <!-- Projects will be populated here -->
+            </div>
+            <div class="no-results" id="noResults" style="display: none;">
+                <p>🔍 לא נמצאו פרויקטים בהתאם לקריטריונים שנבחרו</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const stages = [
+            "הכל",
+            "הליך פתיחה", 
+            "נפתח לפני החלטת ועדה",
+            "בדיקה מרחבית אחרי ועדה",
+            "בדיקת תכן",
+            "בדיקה סופית",
+            "אגרות והשבחה",
+            "נמסר היתר"
+        ];
+
+        let currentStage = "הכל";
+        let filteredProjects = [];
+        let allProjects = [];
+
+        // Initialize the application
+        async function init() {
+            createTabs();
+            await loadData();
+            setupEventListeners();
+        }
+
+        async function loadData() {
+            try {
+                showLoading();
+                console.log('מתחיל טעינת נתונים...');
+                
+                // טעינת כל הפרויקטים
+                const projectsResponse = await fetch('/api/projects');
+                console.log('סטטוס תגובת פרויקטים:', projectsResponse.status);
+                
+                if (!projectsResponse.ok) {
+                    const errorText = await projectsResponse.text();
+                    console.error('שגיאה בתגובת פרויקטים:', errorText);
+                    throw new Error(`שגיאה בטעינת פרויקטים: ${projectsResponse.status}`);
+                }
+                
+                const projectsData = await projectsResponse.json();
+                console.log('נתוני פרויקטים שהתקבלו:', projectsData);
+                
+                if (Array.isArray(projectsData)) {
+                    allProjects = projectsData;
+                    console.log(`נטענו ${allProjects.length} פרויקטים`);
+                } else {
+                    console.error('נתוני פרויקטים אינם מערך:', projectsData);
+                    throw new Error('פורמט נתונים לא תקין');
+                }
+                
+                // טעינת רשימות לסינון
+                try {
+                    const filtersResponse = await fetch('/api/filters');
+                    if (filtersResponse.ok) {
+                        const filters = await filtersResponse.json();
+                        populateFilters(filters);
+                    } else {
+                        console.warn('לא ניתן לטעון רשימות סינון, ממשיך בלעדיהן');
+                        // יצירת רשימות סינון מהנתונים הקיימים
+                        createFiltersFromData();
+                    }
+                } catch (filterError) {
+                    console.warn('שגיאה בטעינת סינונים:', filterError);
+                    createFiltersFromData();
+                }
+                
+                filterProjects();
+                hideLoading();
+                console.log('טעינת נתונים הושלמה בהצלחה');
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError();
+            }
+        }
+
+        function createFiltersFromData() {
+            if (allProjects.length > 0) {
+                const engineers = [...new Set(allProjects.map(p => p.engineer).filter(e => e))].sort();
+                const teamLeaders = [...new Set(allProjects.map(p => p.team_leader).filter(e => e))].sort();
+                const cities = [...new Set(allProjects.map(p => p.city).filter(e => e))].sort();
+                
+                populateSelect('engineerFilter', engineers);
+                populateSelect('teamLeaderFilter', teamLeaders);
+                populateSelect('cityFilter', cities);
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('projectsGrid').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('projectsGrid').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
             
-    except Exception as e:
-        print(f"שגיאה בקבלת פרויקט: {e}")
-        return jsonify({"error": "שגיאה בקבלת נתונים"}), 500
-    finally:
-        conn.close()
+            // הצג הודעת שגיאה מפורטת יותר
+            const errorDiv = document.getElementById('error');
+            errorDiv.innerHTML = `
+                <p>❌ שגיאה בטעינת הנתונים</p>
+                <p>אנא בדוק את החיבור לשרת ונסה שוב</p>
+                <button onclick="location.reload()" style="margin-top: 10px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">רענן דף</button>
+                <button onclick="testConnection()" style="margin-top: 10px; margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">בדוק חיבור</button>
+            `;
+        }
 
-@app.route('/api/stats')
-def get_stats():
-    """API לקבלת סטטיסטיקות"""
-    conn = get_db_connection()
-    if not conn:
-        return jsonify({"error": "שגיאה בחיבור למסד הנתונים"}), 500
-    
-    try:
-        cursor = conn.cursor()
-        
-        # סטטיסטיקות כלליות
-        cursor.execute("SELECT COUNT(*) as total FROM projects")
-        total = cursor.fetchone()[0]
-        
-        # סטטיסטיקות לפי שלב
-        cursor.execute("""
-            SELECT stage, COUNT(*) as count 
-            FROM projects 
-            GROUP BY stage
-        """)
-        stages_stats = {row[0]: row[1] for row in cursor.fetchall()}
-        
-        # סטטיסטיקות לפי עיר
-        cursor.execute("""
-            SELECT city, COUNT(*) as count 
-            FROM projects 
-            GROUP BY city 
-            ORDER BY count DESC
-        """)
-        cities_stats = {row[0]: row[1] for row in cursor.fetchall()}
-        
-        return jsonify({
-            "total_projects": total,
-            "stages": stages_stats,
-            "cities": cities_stats
-        })
-        
-    except Exception as e:
-        print(f"שגיאה בקבלת סטטיסטיקות: {e}")
-        return jsonify({"error": "שגיאה בקבלת נתונים"}), 500
-    finally:
-        conn.close()
+        async function testConnection() {
+            try {
+                console.log('בודק חיבור לשרת...');
+                const response = await fetch('/health');
+                const result = await response.json();
+                console.log('תגובת בדיקת חיבור:', result);
+                alert('החיבור לשרת תקין: ' + result.status);
+            } catch (error) {
+                console.error('שגיאה בבדיקת חיבור:', error);
+                alert('שגיאה בחיבור לשרת: ' + error.message);
+            }
+        }
 
-@app.route('/api/filters')
-def get_filters():
-    """API לקבלת רשימות לסינון"""
-    conn = get_db_connection()
-    if not conn:
-        return jsonify({"error": "שגיאה בחיבור למסד הנתונים"}), 500
-    
-    try:
-        cursor = conn.cursor()
-        
-        # רשימת מהנדסים
-        cursor.execute("SELECT DISTINCT engineer FROM projects WHERE engineer IS NOT NULL ORDER BY engineer")
-        engineers = [row[0] for row in cursor.fetchall()]
-        
-        # רשימת ראשי צוותים
-        cursor.execute("SELECT DISTINCT team_leader FROM projects WHERE team_leader IS NOT NULL ORDER BY team_leader")
-        team_leaders = [row[0] for row in cursor.fetchall()]
-        
-        # רשימת ערים
-        cursor.execute("SELECT DISTINCT city FROM projects WHERE city IS NOT NULL ORDER BY city")
-        cities = [row[0] for row in cursor.fetchall()]
-        
-        # רשימת שלבים
-        cursor.execute("SELECT DISTINCT stage FROM projects WHERE stage IS NOT NULL ORDER BY stage")
-        stages = [row[0] for row in cursor.fetchall()]
-        
-        return jsonify({
-            "engineers": engineers,
-            "team_leaders": team_leaders,
-            "cities": cities,
-            "stages": stages
-        })
-        
-    except Exception as e:
-        print(f"שגיאה בקבלת רשימות סינון: {e}")
-        return jsonify({"error": "שגיאה בקבלת נתונים"}), 500
-    finally:
-        conn.close()
+        function createTabs() {
+            const tabsContainer = document.getElementById('tabs');
+            stages.forEach(stage => {
+                const tab = document.createElement('button');
+                tab.className = `tab ${stage === currentStage ? 'active' : ''}`;
+                tab.textContent = stage;
+                tab.onclick = () => switchTab(stage);
+                tabsContainer.appendChild(tab);
+            });
+        }
 
-@app.route('/health')
-def health():
-    """endpoint לבדיקת תקינות השרת"""
-    return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
+        function switchTab(stage) {
+            currentStage = stage;
+            
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.toggle('active', tab.textContent === stage);
+            });
 
-if __name__ == '__main__':
-    # אתחול מסד הנתונים
-    init_database()
-    
-    # הפעלת השרת
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+            filterProjects();
+        }
+
+        function populateFilters(filters) {
+            populateSelect('engineerFilter', filters.engineers);
+            populateSelect('teamLeaderFilter', filters.team_leaders);
+            populateSelect('cityFilter', filters.cities);
+        }
+
+        function populateSelect(selectId, options) {
+            const select = document.getElementById(selectId);
+            // נקה אופציות קיימות (פרט לראשונה)
+            while (select.children.length > 1) {
+                select.removeChild(select.lastChild);
+            }
+            
+            options.forEach(option => {
+                if (option) {
+                    const opt = document.createElement('option');
+                    opt.value = option;
+                    opt.textContent = option;
+                    select.appendChild(opt);
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('searchInput').addEventListener('input', filterProjects);
+            document.getElementById('engineerFilter').addEventListener('change', filterProjects);
+            document.getElementById('teamLeaderFilter').addEventListener('change', filterProjects);
+            document.getElementById('cityFilter').addEventListener('change', filterProjects);
+        }
+
+        function filterProjects() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const engineerFilter = document.getElementById('engineerFilter').value;
+            const teamLeaderFilter = document.getElementById('teamLeaderFilter').value;
+            const cityFilter = document.getElementById('cityFilter').value;
+
+            filteredProjects = allProjects.filter(project => {
+                // Stage filter
+                if (currentStage !== "הכל" && project.stage !== currentStage) {
+                    return false;
+                }
+
+                // Search filter
+                if (searchTerm && !searchMatches(project, searchTerm)) {
+                    return false;
+                }
+
+                // Engineer filter
+                if (engineerFilter && project.engineer !== engineerFilter) {
+                    return false;
+                }
+
+                // Team leader filter
+                if (teamLeaderFilter && project.team_leader !== teamLeaderFilter) {
+                    return false;
+                }
+
+                // City filter
+                if (cityFilter && project.city !== cityFilter) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            displayProjects();
+            updateStats();
+        }
+
+        function searchMatches(project, searchTerm) {
+            const searchFields = [
+                'project_name', 'request_number', 'info_file_number',
+                'city', 'engineer', 'team_leader', 'entrepreneur_name',
+                'architect', 'notes'
+            ];
+
+            return searchFields.some(field => 
+                project[field] && project[field].toLowerCase().includes(searchTerm)
+            );
+        }
+
+        function displayProjects() {
+            const container = document.getElementById('projectsGrid');
+            const noResults = document.getElementById('noResults');
+            const projectCount = document.getElementById('projectCount');
+
+            if (filteredProjects.length === 0) {
+                container.style.display = 'none';
+                noResults.style.display = 'block';
+                projectCount.textContent = 'לא נמצאו פרויקטים';
+                return;
+            }
+
+            container.style.display = 'grid';
+            noResults.style.display = 'none';
+            projectCount.textContent = `סך הכל: ${filteredProjects.length} פרויקטים`;
+
+            container.innerHTML = '';
+            filteredProjects.forEach(project => {
+                const projectCard = createProjectCard(project);
+                container.appendChild(projectCard);
+            });
+        }
+
+        function createProjectCard(project) {
+            const card = document.createElement('div');
+            card.className = `project-card ${getProjectStatus(project)}`;
+
+            card.innerHTML = `
+                <div class="project-title">${project.project_name || 'ללא שם'}</div>
+                
+                <div class="project-info">
+                    <div class="info-item">
+                        <div class="info-label">מס' בקשה</div>
+                        <div class="info-value">${project.request_number || 'לא צוין'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">מס' תיק מידע</div>
+                        <div class="info-value">${project.info_file_number || 'לא צוין'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">שלב רישוי</div>
+                        <div class="info-value">${project.stage || 'לא צוין'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">מהות הבקשה</div>
+                        <div class="info-value">${project.request_types || 'לא צוין'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">מהנדס רישוי</div>
+                        <div class="info-value">${project.engineer || 'לא צוין'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">ראש צוות</div>
+                        <div class="info-value">${project.team_leader || 'לא צוין'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">חברת ניהול</div>
+                        <div class="info-value">${project.management_company || 'לא צוין'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">יזם</div>
+                        <div class="info-value">${project.entrepreneur_name || 'לא צוין'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">אדריכל</div>
+                        <div class="info-value">${project.architect || 'לא צוין'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">עיר</div>
+                        <div class="info-value">${project.city || 'לא צוין'}</div>
+                    </div>
+                </div>
+
+                <div class="project-dates">
+                    <div class="dates-grid">
+                        <div class="date-item">
+                            <div class="date-label">תאריך קבלת תיק מידע</div>
+                            <div class="date-value">${formatDate(project.date)}</div>
+                        </div>
+                        <div class="date-item">
+                            <div class="date-label">תאריך פתיחת בקשה</div>
+                            <div class="date-value">${formatDate(project.opening_date)}</div>
+                        </div>
+                        <div class="date-item">
+                            <div class="date-label">תאריך סטטוס רישוי</div>
+                            <div class="date-value">${formatDate(project.status_date)}</div>
+                        </div>
+                        <div class="date-item">
+                            <div class="date-label">תאריך החלטת ועדה</div>
+                            <div class="date-value">${formatDate(project.committee_date)}</div>
+                        </div>
+                        <div class="date-item">
+                            <div class="date-label">תאריך תוקף היתר</div>
+                            <div class="date-value">${formatDate(project.permit_validity_date)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                ${project.notes ? `<div style="margin-top: 15px; padding: 10px; background: rgba(102, 126, 234, 0.1); border-radius: 6px;"><strong>הערות:</strong> ${project.notes}</div>` : ''}
+            `;
+
+            return card;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return 'לא צוין';
+            
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('he-IL');
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
+        function getProjectStatus(project) {
+            const now = new Date();
+            
+            // Check opening date expiry (45 business days)
+            if (project.opening_date) {
+                const openingDate = new Date(project.opening_date);
+                const expiryDate = addBusinessDays(openingDate, 45);
+                
+                if (now > expiryDate) {
+                    return 'expired';
+                }
+                
+                const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+                if (daysUntilExpiry <= 15) {
+                    return 'approaching';
+                }
+            }
+
+            // Check permit validity expiry
+            if (project.permit_validity_date) {
+                const permitDate = new Date(project.permit_validity_date);
+                const permitExpiry = new Date(permitDate);
+                permitExpiry.setFullYear(permitExpiry.getFullYear() + 1);
+                
+                if (now > permitExpiry) {
+                    return 'warning';
+                }
+            }
+
+            // Check committee date expiry (2 years)
+            if (project.committee_date) {
+                const committeeDate = new Date(project.committee_date);
+                const committeeExpiry = new Date(committeeDate);
+                committeeExpiry.setFullYear(committeeExpiry.getFullYear() + 2);
+                
+                const daysUntilExpiry = Math.ceil((committeeExpiry - now) / (1000 * 60 * 60 * 24));
+                if (daysUntilExpiry <= 180) {
+                    return 'committee_expiring';
+                }
+            }
+
+            // Check info date expiry (2 years)
+            if (project.date) {
+                const infoDate = new Date(project.date);
+                const infoExpiry = new Date(infoDate);
+                infoExpiry.setFullYear(infoExpiry.getFullYear() + 2);
+                
+                const daysUntilExpiry = Math.ceil((infoExpiry - now) / (1000 * 60 * 60 * 24));
+                if (daysUntilExpiry <= 120) {
+                    return 'info_expiring';
+                }
+            }
+
+            return '';
+        }
+
+        function addBusinessDays(startDate, businessDays) {
+            const result = new Date(startDate);
+            let daysAdded = 0;
+
+            while (daysAdded < businessDays) {
+                result.setDate(result.getDate() + 1);
+                
+                // Skip weekends (Friday=5, Saturday=6 in Israel)
+                if (result.getDay() !== 5 && result.getDay() !== 6) {
+                    daysAdded++;
+                }
+            }
+
+            return result;
+        }
+
+        function updateStats() {
+            const statsContainer = document.getElementById('stats');
+            const totalProjects = filteredProjects.length;
+            
+            const stageStats = stages.slice(1).reduce((acc, stage) => {
+                acc[stage] = filteredProjects.filter(p => p.stage === stage).length;
+                return acc;
+            }, {});
+
+            const statusStats = {
+                expired: filteredProjects.filter(p => getProjectStatus(p) === 'expired').length,
+                warning: filteredProjects.filter(p => getProjectStatus(p) === 'warning').length,
+                approaching: filteredProjects.filter(p => getProjectStatus(p) === 'approaching').length,
+                committee_expiring: filteredProjects.filter(p => getProjectStatus(p) === 'committee_expiring').length,
+                info_expiring: filteredProjects.filter(p => getProjectStatus(p) === 'info_expiring').length
+            };
+
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${totalProjects}</div>
+                    <div class="stat-label">סך הכל פרויקטים</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${statusStats.expired}</div>
+                    <div class="stat-label">תאריכים שפגו</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${statusStats.approaching}</div>
+                    <div class="stat-label">מתקרבים לפקיעה</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stageStats['בדיקה סופית'] || 0}</div>
+                    <div class="stat-label">בדיקה סופית</div>
+                </div>
+            `;
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
