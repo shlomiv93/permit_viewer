@@ -394,30 +394,59 @@ def health():
 def debug():
     """endpoint לדיבאג"""
     try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({"error": "לא ניתן להתחבר למסד הנתונים"})
-        
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM projects")
-        count = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = [row[0] for row in cursor.fetchall()]
-        
-        conn.close()
-        
-        return jsonify({
+        debug_info = {
+            "timestamp": datetime.now().isoformat(),
             "database_path": DATABASE_PATH,
             "database_exists": os.path.exists(DATABASE_PATH),
-            "project_count": count,
-            "tables": tables,
             "working_directory": os.getcwd(),
-            "environment": dict(os.environ)
-        })
+            "directory_contents": os.listdir('.'),
+            "database_size": os.path.getsize(DATABASE_PATH) if os.path.exists(DATABASE_PATH) else 0,
+        }
+        
+        # נסה להתחבר למסד הנתונים
+        conn = get_db_connection()
+        if conn:
+            cursor = conn.cursor()
+            
+            # בדיקת טבלאות
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [row[0] for row in cursor.fetchall()]
+            debug_info["tables"] = tables
+            
+            # אם יש טבלת projects
+            if 'projects' in tables:
+                cursor.execute("SELECT COUNT(*) FROM projects")
+                count = cursor.fetchone()[0]
+                debug_info["projects_count"] = count
+                
+                # דוגמה לפרויקט
+                cursor.execute("SELECT * FROM projects LIMIT 1")
+                sample = cursor.fetchone()
+                if sample:
+                    debug_info["sample_project"] = dict(sample)
+            
+            conn.close()
+            debug_info["database_connection"] = "success"
+        else:
+            debug_info["database_connection"] = "failed"
+            
+        response = jsonify(debug_info)
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
         
     except Exception as e:
-        return jsonify({"error": str(e)})
+        error_info = {
+            "error": str(e),
+            "timestamp": datetime.now().isoformat(),
+            "database_path": DATABASE_PATH,
+            "working_directory": os.getcwd(),
+        }
+        import traceback
+        error_info["traceback"] = traceback.format_exc()
+        
+        response = jsonify(error_info)
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
 
 @app.errorhandler(404)
 def not_found(error):
@@ -436,6 +465,16 @@ def before_request():
 
 if __name__ == '__main__':
     print("מתחיל השרת...")
+    print(f"תיקיית עבודה: {os.getcwd()}")
+    print(f"נתיב מסד נתונים: {DATABASE_PATH}")
+    print(f"קבצים בתיקייה: {os.listdir('.')}")
+    
+    # בדיקה אם קובץ מסד הנתונים קיים
+    if os.path.exists(DATABASE_PATH):
+        print(f"מסד הנתונים קיים. גודל: {os.path.getsize(DATABASE_PATH)} בתים")
+    else:
+        print("מסד הנתונים לא קיים - יווצר אוטומטית")
+    
     # אתחול מסד הנתונים
     init_database()
     
