@@ -1,1356 +1,867 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html dir="rtl" lang="he">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>מערכת רישוי - צפייה נייד</title>
-
-    <!-- Bootstrap RTL -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-
-    <!-- SQL.js for SQLite in browser -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>צפיין מערכת רישוי</title>
     <style>
-        :root {
-            --primary-color: #4776E6;
-            --secondary-color: #8E54E9;
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
-            --info-color: #17a2b8;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            font-size: 14px;
-        }
-
-        .navbar {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,.1);
-            padding: 0.5rem 1rem;
-        }
-
-        .navbar-brand {
-            font-weight: bold;
-            color: white !important;
-            font-size: 1.2rem;
-        }
-
-        .main-container {
-            padding: 1rem 0.5rem;
-        }
-
-        /* כרטיסי פרויקט */
-        .project-card {
-            background: white;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-right: 4px solid #ddd;
-        }
-
-        .project-card.status-approaching {
-            border-right-color: #FFB6C1;
-            background-color: #fef9f9;
-        }
-
-        .project-card.status-warning {
-            border-right-color: #ffc107;
-            background-color: #fffdf0;
-        }
-
-        .project-card.status-committee_expiring {
-            border-right-color: #ADD8E6;
-            background-color: #f0f8ff;
-        }
-
-        .project-card.status-info_expiring {
-            border-right-color: #ffeaa7;
-            background-color: #fffef0;
-        }
-
-        .project-header {
-            font-weight: bold;
-            font-size: 1.1rem;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.5rem;
-        }
-
-        .project-detail {
-            margin-bottom: 0.3rem;
-            font-size: 0.9rem;
-        }
-
-        .project-detail .label {
-            font-weight: bold;
-            color: #666;
-            display: inline-block;
-            min-width: 80px;
-        }
-
-        .project-detail .value {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            direction: rtl;
             color: #333;
         }
 
-        /* כפתורים */
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            border: none;
-            border-radius: 20px;
-            padding: 0.4rem 1rem;
-            font-weight: bold;
-            font-size: 0.9rem;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
         }
 
-        .btn-sm {
-            padding: 0.3rem 0.8rem;
-            font-size: 0.8rem;
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
 
-        /* חיפוש */
-        .search-container {
-            background: white;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        /* סטטיסטיקות */
-        .stats-row {
-            background: white;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .stat-item {
+        .header h1 {
+            color: #667eea;
             text-align: center;
-            padding: 0.5rem;
+            margin-bottom: 15px;
+            font-size: 2rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         .stat-number {
-            font-size: 1.5rem;
+            font-size: 2rem;
             font-weight: bold;
-            color: var(--primary-color);
+            color: #667eea;
         }
 
         .stat-label {
-            font-size: 0.8rem;
             color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
         }
 
-        /* טאבים מותאמים לנייד */
-        .mobile-tabs {
-            background: white;
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
             border-radius: 8px;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            overflow-x: auto;
-            white-space: nowrap;
+            font-size: 14px;
+            transition: border-color 0.3s;
         }
 
-        .mobile-tabs .nav-link {
-            font-size: 0.8rem;
-            padding: 0.5rem 0.8rem;
-            border: none;
-            color: #666;
-            white-space: nowrap;
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
         }
 
-        .mobile-tabs .nav-link.active {
-            background: var(--primary-color);
-            color: white;
-            border-radius: 6px;
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
-        /* מצב טעינה */
-        .loading {
+        .tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px 10px;
             text-align: center;
-            padding: 2rem;
-            color: #666;
-        }
-
-        .spinner {
-            width: 30px;
-            height: 30px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* אזור העלאת קובץ */
-        .file-upload-area {
-            background: white;
-            border: 2px dashed var(--primary-color);
-            border-radius: 8px;
-            padding: 2rem;
-            text-align: center;
-            margin-bottom: 1rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            background: transparent;
+            color: #666;
+            transition: all 0.3s;
+            border: none;
+            font-size: 14px;
         }
 
-        .file-upload-area:hover {
-            background-color: #f8f9ff;
-            border-color: var(--secondary-color);
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
         }
 
-        .file-upload-area.dragover {
-            background-color: #e8f2ff;
-            border-color: var(--secondary-color);
-            transform: scale(1.02);
+        .tab:hover:not(.active) {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
         }
 
-        .file-input {
-            display: none;
+        .projects-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
 
-        .database-status {
+        .project-count {
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .projects-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .project-card {
             background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-right: 5px solid #667eea;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .project-card.expired {
+            border-right-color: #ff6b6b;
+            background: linear-gradient(135deg, #fff 0%, #ffe0e0 100%);
+        }
+
+        .project-card.warning {
+            border-right-color: #feca57;
+            background: linear-gradient(135deg, #fff 0%, #fff9e0 100%);
+        }
+
+        .project-card.approaching {
+            border-right-color: #ff9ff3;
+            background: linear-gradient(135deg, #fff 0%, #ffe0fc 100%);
+        }
+
+        .project-card.committee_expiring {
+            border-right-color: #54a0ff;
+            background: linear-gradient(135deg, #fff 0%, #e0f0ff 100%);
+        }
+
+        .project-card.info_expiring {
+            border-right-color: #ff9500;
+            background: linear-gradient(135deg, #fff 0%, #ffe8d4 100%);
+        }
+
+        .project-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .project-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .project-dates {
+            background: rgba(102, 126, 234, 0.1);
             border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px;
+            margin-top: 15px;
         }
 
-        .status-connected {
-            border-right: 4px solid var(--success-color);
+        .dates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
         }
 
-        .status-disconnected {
-            border-right: 4px solid var(--danger-color);
+        .date-item {
+            background: white;
+            border-radius: 6px;
+            padding: 10px;
         }
 
-        /* הסתרת אלמנטים לא חשובים בנייד */
-        @media (max-width: 576px) {
-            .hide-mobile { display: none !important; }
-
-            .project-detail {
-                font-size: 0.85rem;
-            }
-
-            .project-detail .label {
-                min-width: 70px;
-                font-size: 0.8rem;
-            }
-
-            .navbar-brand {
-                font-size: 1rem;
-            }
-
-            .file-upload-area {
-                padding: 1.5rem;
-            }
+        .date-label {
+            font-size: 0.8rem;
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
 
-        /* אלמנטים נסתרים */
-        .d-none { display: none !important; }
-        .d-block { display: block !important; }
+        .date-value {
+            font-size: 0.9rem;
+            color: #333;
+            white-space: pre-line;
+        }
 
-        /* הודעות התראה */
-        .alert {
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            padding: 0.75rem;
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             font-size: 0.9rem;
         }
 
-        /* כפתור חזרה למעלה */
-        .back-to-top {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
             font-size: 1.2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            display: none;
-            z-index: 1000;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                flex: none;
+                padding: 12px;
+            }
+
+            .project-info {
+                grid-template-columns: 1fr;
+            }
+
+            .dates-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .legend {
+                flex-direction: column;
+                align-items: center;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#" onclick="showUploadView()">
-                <i class="fas fa-building"></i>
-                מערכת רישוי
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="#" onclick="loadMainView()" id="nav-main" style="display: none;">
-                            <i class="fas fa-home"></i> ראשי
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="#" onclick="loadTeamLeadersView()" id="nav-teams" style="display: none;">
-                            <i class="fas fa-users"></i> ראשי צוותים
-                        </a>
-                    </li>
-                    <li class="nav-item hide-mobile">
-                        <a class="nav-link text-white" href="#" onclick="loadCityTeamsView()" id="nav-cities" style="display: none;">
-                            <i class="fas fa-city"></i> צוותי עירייה
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="#" onclick="showUploadView()" id="nav-upload">
-                            <i class="fas fa-upload"></i> טען DB
-                        </a>
-                    </li>
-                </ul>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 צפיין מערכת רישוי</h1>
+            <div class="stats" id="stats">
+                <!-- Statistics will be populated here -->
             </div>
         </div>
-    </nav>
 
-    <!-- תוכן ראשי -->
-    <div class="container-fluid main-container">
-        <div id="main-content">
-            <!-- תוכן יטען כאן -->
+        <div class="filters">
+            <div class="filter-group">
+                <label for="searchInput">🔍 חיפוש</label>
+                <input type="text" id="searchInput" placeholder="חפש לפי שם פרויקט, מס' בקשה או עיר...">
+            </div>
+            <div class="filter-group">
+                <label for="engineerFilter">👨‍💼 מהנדס רישוי</label>
+                <select id="engineerFilter">
+                    <option value="">כל המהנדסים</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="teamLeaderFilter">👥 ראש צוות</label>
+                <select id="teamLeaderFilter">
+                    <option value="">כל ראשי הצוותים</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="cityFilter">🏙️ עיר</label>
+                <select id="cityFilter">
+                    <option value="">כל הערים</option>
+                </select>
+            </div>
         </div>
 
-        <!-- אינדיקטור טעינה -->
-        <div id="loading" class="loading d-none">
-            <div class="spinner"></div>
-            <p>טוען נתונים ממסד הנתונים...</p>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff6b6b;"></div>
+                <span>תאריך פתיחת בקשה פג תוקף</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #feca57;"></div>
+                <span>תאריך תוקף היתר פג</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff9ff3;"></div>
+                <span>תאריך פתיחה מתקרב לפקיעה</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #54a0ff;"></div>
+                <span>תאריך ועדה מתקרב לפקיעה</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff9500;"></div>
+                <span>תיק מידע מתקרב לפקיעה</span>
+            </div>
+        </div>
+
+        <div class="tabs" id="tabs">
+            <!-- Tabs will be populated here -->
+        </div>
+
+        <div class="projects-container">
+            <div class="project-count" id="projectCount">טוען נתונים...</div>
+            <div class="loading" id="loading">🔄 טוען נתונים...</div>
+            <div class="projects-grid" id="projectsGrid" style="display: none;">
+                <!-- Projects will be populated here -->
+            </div>
+            <div class="no-results" id="noResults" style="display: none;">
+                <p>🔍 לא נמצאו פרויקטים בהתאם לקריטריונים שנבחרו</p>
+            </div>
         </div>
     </div>
 
-    <!-- כפתור חזרה למעלה -->
-    <button id="back-to-top" class="back-to-top" onclick="scrollToTop()">
-        <i class="fas fa-arrow-up"></i>
-    </button>
-
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
-        // משתני גלובל
-        let currentStage = 'הכל';
-        let allProjects = [];
-        let filteredProjects = [];
-        let database = null;
-        let SQL = null;
-
-        // התחלת האפליקציה
-        document.addEventListener('DOMContentLoaded', async function() {
-            await initializeSQL();
-            showUploadView();
-            initializeBackToTop();
-            setupFileUpload();
-        });
-
-        // אתחול SQL.js
-        async function initializeSQL() {
-            try {
-                showLoading();
-                SQL = await initSqlJs({
-                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
-                });
-                console.log('✅ SQL.js אותחל בהצלחה');
-                hideLoading();
-            } catch (error) {
-                console.error('❌ שגיאה באתחול SQL.js:', error);
-                showError('שגיאה באתחול מנוע הדאטהבייס');
-                hideLoading();
+        // Mock data for demonstration - replace with actual SQLite data
+        const mockProjects = [
+            {
+                id: 1,
+                project_name: "פרויקט דוגמה 1",
+                request_number: "2024/001",
+                info_file_number: "INFO-001",
+                date: "2023-01-15",
+                opening_date: "2023-02-01",
+                status_date: "2023-03-01",
+                committee_date: "2023-04-01",
+                permit_validity_date: "2024-01-01",
+                team_leader: "ישראל כהן",
+                engineer: "דנה לוי",
+                stage: "הליך פתיחה",
+                request_types: "בנייה חדשה",
+                management_company: "חברת ניהול א'",
+                entrepreneur_name: "יוסי פרויקטים",
+                architect: "אדריכל בכיר",
+                city: "תל אביב",
+                notes: "פרויקט חשוב במיוחד"
+            },
+            {
+                id: 2,
+                project_name: "פרויקט דוגמה 2",
+                request_number: "2024/002",
+                info_file_number: "INFO-002",
+                date: "2023-06-15",
+                opening_date: "2023-07-01",
+                status_date: "2023-08-01",
+                committee_date: "2023-09-01",
+                permit_validity_date: "2024-06-01",
+                team_leader: "מיכל דוד",
+                engineer: "אבי שמש",
+                stage: "נפתח לפני החלטת ועדה",
+                request_types: "תמא 38",
+                management_company: "חברת ניהול ב'",
+                entrepreneur_name: "שרה בנייה",
+                architect: "אדריכל מומחה",
+                city: "ירושלים",
+                notes: "דורש בדיקה מיוחדת"
+            },
+            {
+                id: 3,
+                project_name: "מגדל מגורים חדש",
+                request_number: "2024/003",
+                info_file_number: "INFO-003",
+                date: "2024-01-10",
+                opening_date: "2024-02-15",
+                status_date: "2024-03-20",
+                committee_date: "2024-04-25",
+                permit_validity_date: "2025-01-10",
+                team_leader: "רונית ברק",
+                engineer: "עמית גל",
+                stage: "בדיקה מרחבית אחרי ועדה",
+                request_types: "בנייה חדשה",
+                management_company: "חברת ניהול ג'",
+                entrepreneur_name: "דוד יזמות",
+                architect: "סטודיו אדריכלות",
+                city: "חיפה",
+                notes: "פרויקט של 20 קומות"
             }
+        ];
+
+        const stages = [
+            "הכל",
+            "הליך פתיחה", 
+            "נפתח לפני החלטת ועדה",
+            "בדיקה מרחבית אחרי ועדה",
+            "בדיקת תכן",
+            "בדיקה סופית",
+            "אגרות והשבחה",
+            "נמסר היתר"
+        ];
+
+        let currentStage = "הכל";
+        let filteredProjects = [...mockProjects];
+        let allProjects = [...mockProjects];
+
+        // Initialize the application
+        function init() {
+            createTabs();
+            populateFilters();
+            updateStats();
+            displayProjects();
+            setupEventListeners();
+            hideLoading();
         }
 
-        // הגדרת העלאת קבצים
-        function setupFileUpload() {
-            const uploadArea = document.getElementById('upload-area');
-            const fileInput = document.getElementById('file-input');
-
-            if (uploadArea && fileInput) {
-                // לחיצה על האזור
-                uploadArea.addEventListener('click', () => {
-                    fileInput.click();
-                });
-
-                // שינוי קובץ
-                fileInput.addEventListener('change', handleFileSelect);
-
-                // גרירה ושחרור
-                uploadArea.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    uploadArea.classList.add('dragover');
-                });
-
-                uploadArea.addEventListener('dragleave', () => {
-                    uploadArea.classList.remove('dragover');
-                });
-
-                uploadArea.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    uploadArea.classList.remove('dragover');
-                    
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) {
-                        handleFile(files[0]);
-                    }
-                });
-            }
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('projectsGrid').style.display = 'grid';
         }
 
-        // טיפול בבחירת קובץ
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                handleFile(file);
-            }
+        function createTabs() {
+            const tabsContainer = document.getElementById('tabs');
+            stages.forEach(stage => {
+                const tab = document.createElement('button');
+                tab.className = `tab ${stage === currentStage ? 'active' : ''}`;
+                tab.textContent = stage;
+                tab.onclick = () => switchTab(stage);
+                tabsContainer.appendChild(tab);
+            });
         }
 
-        // טיפול בקובץ
-        async function handleFile(file) {
-            if (!file.name.endsWith('.db')) {
-                showError('יש לבחור קובץ עם סיומת .db');
-                return;
-            }
-
-            try {
-                showLoading();
-                
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    try {
-                        const arrayBuffer = e.target.result;
-                        const uInt8Array = new Uint8Array(arrayBuffer);
-                        
-                        // יצירת מסד נתונים מהקובץ
-                        database = new SQL.Database(uInt8Array);
-                        
-                        console.log('✅ מסד הנתונים נטען בהצלחה');
-                        
-                        // טעינת נתונים
-                        await loadDataFromDatabase();
-                        
-                        // מעבר לתצוגה הראשית
-                        showNavigation();
-                        loadMainView();
-                        
-                        showSuccess(`קובץ ${file.name} נטען בהצלחה! נמצאו ${allProjects.length} פרויקטים.`);
-                        
-                    } catch (error) {
-                        console.error('❌ שגיאה בטעינת מסד הנתונים:', error);
-                        showError('שגיאה בטעינת מסד הנתונים. ודא שזה קובץ SQLite תקין.');
-                    } finally {
-                        hideLoading();
-                    }
-                };
-                
-                reader.readAsArrayBuffer(file);
-                
-            } catch (error) {
-                console.error('❌ שגיאה בקריאת הקובץ:', error);
-                showError('שגיאה בקריאת הקובץ');
-                hideLoading();
-            }
-        }
-
-        // טעינת נתונים ממסד הנתונים
-        async function loadDataFromDatabase() {
-            if (!database) {
-                throw new Error('מסד נתונים לא זמין');
-            }
-
-            try {
-                // בדיקת טבלאות זמינות
-                const tables = database.exec("SELECT name FROM sqlite_master WHERE type='table'");
-                console.log('טבלאות זמינות:', tables);
-
-                // שאילתה לטבלת הפרויקטים
-                const query = `
-                    SELECT 
-                        id, project_name, request_number, info_file_number,
-                        date, opening_date, status_date, committee_date, permit_validity_date, 
-                        team_leader, stage, request_types, engineer, management_company, 
-                        entrepreneur_name, architect, city, notes,
-                        COALESCE(info_date_extension, 0) as info_date_extension,
-                        COALESCE(opening_date_extension, 0) as opening_date_extension,
-                        COALESCE(status_date_extension, 0) as status_date_extension,
-                        COALESCE(committee_date_extension, 0) as committee_date_extension,
-                        COALESCE(permit_validity_date_extension, 0) as permit_validity_date_extension,
-                        city_team
-                    FROM projects
-                    ORDER BY project_name
-                `;
-
-                const result = database.exec(query);
-                
-                if (result.length === 0) {
-                    throw new Error('לא נמצאו נתונים בטבלת projects');
-                }
-
-                const columns = result[0].columns;
-                const values = result[0].values;
-
-                console.log(`✅ נמצאו ${values.length} פרויקטים`);
-
-                // המרת הנתונים לפורמט JavaScript
-                allProjects = values.map(row => {
-                    const project = {};
-                    columns.forEach((column, index) => {
-                        project[column] = row[index] || '';
-                    });
-                    
-                    // הוספת סטטוס מחושב
-                    project.status = calculateProjectStatus(project);
-                    
-                    return project;
-                });
-
-                console.log('✅ נתונים עובדו בהצלחה');
-
-            } catch (error) {
-                console.error('❌ שגיאה בטעינת נתונים:', error);
-                throw error;
-            }
-        }
-
-        // חישוב סטטוס פרויקט
-        function calculateProjectStatus(project) {
-            try {
-                const stage = project.stage || '';
-                const openingDate = project.opening_date || '';
-                const committeeDate = project.committee_date || '';
-                const permitDate = project.permit_validity_date || '';
-                const infoDate = project.date || '';
-                
-                // לוגיקה פשוטה לקביעת סטטוס
-                if (stage === "נפתח לפני החלטת ועדה") {
-                    if (openingDate && isDateApproachingExpiry(openingDate, 15)) {
-                        return 'approaching';
-                    }
-                }
-                
-                if (permitDate && isPermitExpired(permitDate)) {
-                    return 'warning';
-                }
-                    
-                if (openingDate && isDateApproachingExpiry(openingDate, 15)) {
-                    return 'approaching';
-                }
-                    
-                if (committeeDate && isCommitteeDateExpiring(committeeDate)) {
-                    return 'committee_expiring';
-                }
-                    
-                if (infoDate && isInfoDateExpiring(infoDate)) {
-                    return 'info_expiring';
-                }
-                    
-                return 'normal';
-                
-            } catch (error) {
-                console.warn('שגיאה בחישוב סטטוס פרויקט:', error);
-                return 'normal';
-            }
-        }
-
-        // בדיקות תאריכים (פונקציות עזר פשוטות)
-        function isDateApproachingExpiry(dateStr, daysBefore = 15) {
-            try {
-                if (!dateStr) return false;
-                const date = new Date(dateStr);
-                const now = new Date();
-                const futureDate = new Date(date);
-                futureDate.setDate(futureDate.getDate() + 45); // 45 ימי עסקים בקירוב
-                
-                const diffTime = futureDate - now;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= daysBefore && diffDays > 0;
-            } catch {
-                return false;
-            }
-        }
-
-        function isPermitExpired(dateStr) {
-            try {
-                if (!dateStr) return false;
-                const date = new Date(dateStr);
-                const now = new Date();
-                const expiry = new Date(date);
-                expiry.setFullYear(expiry.getFullYear() + 1); // שנה אחרי
-                return now > expiry;
-            } catch {
-                return false;
-            }
-        }
-
-        function isCommitteeDateExpiring(dateStr) {
-            try {
-                if (!dateStr) return false;
-                const date = new Date(dateStr);
-                const now = new Date();
-                const expiry = new Date(date);
-                expiry.setFullYear(expiry.getFullYear() + 2); // 2 שנים אחרי
-                
-                const diffTime = expiry - now;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 180 && diffDays > 0; // 6 חודשים לפני פקיעה
-            } catch {
-                return false;
-            }
-        }
-
-        function isInfoDateExpiring(dateStr) {
-            try {
-                if (!dateStr) return false;
-                const date = new Date(dateStr);
-                const now = new Date();
-                const expiry = new Date(date);
-                expiry.setFullYear(expiry.getFullYear() + 2); // 2 שנים אחרי
-                
-                const diffTime = expiry - now;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 120; // 4 חודשים לפני פקיעה
-            } catch {
-                return false;
-            }
-        }
-
-        // הצגת תצוגת העלאת קובץ
-        function showUploadView() {
-            hideNavigation();
-            
-            const mainContent = `
-                <!-- סטטוס מסד נתונים -->
-                <div class="database-status ${database ? 'status-connected' : 'status-disconnected'}">
-                    <div class="d-flex align-items-center">
-                        <i class="fas ${database ? 'fa-check-circle text-success' : 'fa-times-circle text-danger'} me-2"></i>
-                        <div>
-                            <strong>מסד נתונים: ${database ? 'מחובר' : 'לא מחובר'}</strong>
-                            ${database ? `<br><small class="text-muted">נטענו ${allProjects.length} פרויקטים</small>` : ''}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- אזור העלאת קובץ -->
-                <div class="file-upload-area" id="upload-area">
-                    <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
-                    <h4>העלה קובץ מסד הנתונים</h4>
-                    <p class="text-muted">גרור ושחרר את קובץ <code>licensing_system.db</code> כאן<br>או לחץ לבחירת קובץ</p>
-                    <button class="btn btn-primary">
-                        <i class="fas fa-folder-open"></i> בחר קובץ
-                    </button>
-                    <input type="file" id="file-input" class="file-input" accept=".db">
-                </div>
-
-                <!-- הוראות שימוש -->
-                <div class="alert alert-info">
-                    <h6><i class="fas fa-info-circle"></i> הוראות שימוש:</h6>
-                    <ol class="mb-0">
-                        <li>הורד את קובץ <code>licensing_system.db</code> מהמחשב שלך</li>
-                        <li>גרור את הקובץ לאזור הכחול למעלה או לחץ לבחירה</li>
-                        <li>המערכת תטען את הנתונים ותציג את כל הפרויקטים</li>
-                        <li>כל הנתונים נשארים במחשב שלך - אין העלאה לשרת</li>
-                    </ol>
-                </div>
-
-                <!-- יתרונות -->
-                <div class="alert alert-success">
-                    <h6><i class="fas fa-check"></i> יתרונות הפתרון:</h6>
-                    <ul class="mb-0">
-                        <li><strong>אבטחה מלאה</strong> - הקובץ לא עוזב את המחשב שלך</li>
-                        <li><strong>ללא שרת</strong> - עובד לחלוטין בדפדפן</li>
-                        <li><strong>נתונים מעודכנים</strong> - תמיד הגרסה החדשה ביותר</li>
-                        <li><strong>גישה מהירה</strong> - ללא צורך בהתקנות</li>
-                    </ul>
-                </div>
-            `;
-
-            document.getElementById('main-content').innerHTML = mainContent;
-            setupFileUpload();
-        }
-
-        // הצגת ניווט
-        function showNavigation() {
-            document.getElementById('nav-main').style.display = 'block';
-            document.getElementById('nav-teams').style.display = 'block';
-            document.getElementById('nav-cities').style.display = 'block';
-        }
-
-        // הסתרת ניווט
-        function hideNavigation() {
-            document.getElementById('nav-main').style.display = 'none';
-            document.getElementById('nav-teams').style.display = 'none';
-            document.getElementById('nav-cities').style.display = 'none';
-        }
-
-        // טעינת תצוגה ראשית
-        function loadMainView() {
-            if (!database || allProjects.length === 0) {
-                showUploadView();
-                return;
-            }
-
-            const mainContent = `
-                <!-- סטטוס מסד נתונים -->
-                <div class="database-status status-connected">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-database text-success me-2"></i>
-                            <div>
-                                <strong>מסד נתונים מחובר</strong>
-                                <br><small class="text-muted">סה"כ ${allProjects.length} פרויקטים</small>
-                            </div>
-                        </div>
-                        <button class="btn btn-sm btn-outline-primary" onclick="showUploadView()">
-                            <i class="fas fa-exchange-alt"></i> החלף קובץ
-                        </button>
-                    </div>
-                </div>
-
-                <!-- חיפוש -->
-                <div class="search-container">
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="searchInput" placeholder="חיפוש פרויקטים...">
-                        <button class="btn btn-primary" onclick="searchProjects()">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                    <div class="mt-2">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="clearSearch()">
-                            <i class="fas fa-times"></i> נקה
-                        </button>
-                        <button class="btn btn-sm btn-outline-success" onclick="refreshData()">
-                            <i class="fas fa-sync-alt"></i> רענן
-                        </button>
-                    </div>
-                </div>
-
-                <!-- סטטיסטיקות -->
-                <div id="statistics" class="stats-row">
-                    <!-- סטטיסטיקות יטענו כאן -->
-                </div>
-
-                <!-- טאבי שלבים -->
-                <div class="mobile-tabs">
-                    <ul class="nav nav-tabs border-0" id="stageTabs">
-                        <li class="nav-item">
-                            <button class="nav-link active" onclick="loadStage('הכל')">הכל</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" onclick="loadStage('הליך פתיחה')">פתיחה</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" onclick="loadStage('נפתח לפני החלטת ועדה')">לפני ועדה</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" onclick="loadStage('בדיקה סופית')">בדיקה סופית</button>
-                        </li>
-                        <li class="nav-item hide-mobile">
-                            <button class="nav-link" onclick="loadStage('בדיקת תכן')">בדיקת תכן</button>
-                        </li>
-                        <li class="nav-item hide-mobile">
-                            <button class="nav-link" onclick="loadStage('אגרות והשבחה')">אגרות</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" onclick="loadStage('נמסר היתר')">נמסר</button>
-                        </li>
-                    </ul>
-                </div>
-
-                <!-- רשימת פרויקטים -->
-                <div id="projects-container">
-                    <!-- פרויקטים יטענו כאן -->
-                </div>
-            `;
-
-            document.getElementById('main-content').innerHTML = mainContent;
-            loadStage('הכל');
-        }
-
-        // רענון נתונים
-        async function refreshData() {
-            if (!database) {
-                showError('אין מסד נתונים מחובר');
-                return;
-            }
-
-            try {
-                showLoading();
-                await loadDataFromDatabase();
-                loadStage(currentStage);
-                showSuccess('הנתונים רועננו בהצלחה');
-            } catch (error) {
-                showError('שגיאה ברענון הנתונים: ' + error.message);
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // טעינת פרויקטים לפי שלב
-        function loadStage(stage) {
-            if (!database || allProjects.length === 0) {
-                showUploadView();
-                return;
-            }
-
+        function switchTab(stage) {
             currentStage = stage;
-
-            // עדכון טאב פעיל
-            document.querySelectorAll('#stageTabs .nav-link').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            const targetTab = document.querySelector(`button[onclick="loadStage('${stage}')"]`);
-            if (targetTab) {
-                targetTab.classList.add('active');
-            }
-
-            // סינון פרויקטים
-            if (stage === 'הכל') {
-                filteredProjects = allProjects;
-            } else {
-                filteredProjects = allProjects.filter(project => project.stage === stage);
-            }
-
-            updateProjectsDisplay();
-            updateStatistics();
-        }
-
-        // עדכון תצוגת פרויקטים
-        function updateProjectsDisplay() {
-            const container = document.getElementById('projects-container');
-            if (!container) return;
-
-            if (filteredProjects.length === 0) {
-                container.innerHTML = `
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        לא נמצאו פרויקטים בשלב זה
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            filteredProjects.forEach(project => {
-                const statusClass = project.status ? `status-${project.status}` : '';
-
-                html += `
-                    <div class="project-card ${statusClass}">
-                        <div class="project-header">
-                            ${project.project_name || 'ללא שם'}
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">מס' בקשה:</span>
-                            <span class="value">${project.request_number || '-'}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">תיק מידע:</span>
-                            <span class="value">${project.info_file_number || '-'}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">תאריך מידע:</span>
-                            <span class="value">${formatDate(project.date)}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">פתיחת בקשה:</span>
-                            <span class="value">${formatDate(project.opening_date)}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">שלב:</span>
-                            <span class="value">
-                                <span class="badge ${getStageColor(project.stage)}">${project.stage || '-'}</span>
-                            </span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">מהנדס:</span>
-                            <span class="value">${project.engineer || '-'}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">ראש צוות:</span>
-                            <span class="value">${project.team_leader || '-'}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">עיר:</span>
-                            <span class="value">${project.city || '-'}</span>
-                        </div>
-                        ${project.notes ? `
-                        <div class="project-detail">
-                            <span class="label">הערות:</span>
-                            <span class="value">${project.notes}</span>
-                        </div>
-                        ` : ''}
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        // קבלת צבע לפי שלב
-        function getStageColor(stage) {
-            switch(stage) {
-                case 'נפתח לפני החלטת ועדה': return 'bg-danger';
-                case 'בדיקה סופית': return 'bg-success';
-                case 'בדיקת תכן': return 'bg-warning';
-                case 'נמסר היתר': return 'bg-primary';
-                case 'הליך פתיחה': return 'bg-info';
-                default: return 'bg-secondary';
-            }
-        }
-
-        // עדכון סטטיסטיקות
-        function updateStatistics() {
-            const statsContainer = document.getElementById('statistics');
-            if (!statsContainer) return;
-
-            const total = filteredProjects.length;
-            const approaching = filteredProjects.filter(p => p.status === 'approaching').length;
-            const warnings = filteredProjects.filter(p => p.status === 'warning').length;
-            const committee = filteredProjects.filter(p => p.status === 'committee_expiring').length;
-            const info = filteredProjects.filter(p => p.status === 'info_expiring').length;
-
-            statsContainer.innerHTML = `
-                <div class="row text-center">
-                    <div class="col-4 col-md-2">
-                        <div class="stat-item">
-                            <div class="stat-number">${total}</div>
-                            <div class="stat-label">סה"כ</div>
-                        </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="stat-item">
-                            <div class="stat-number" style="color: #dc3545;">${approaching}</div>
-                            <div class="stat-label">דחופים</div>
-                        </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="stat-item">
-                            <div class="stat-number" style="color: #ffc107;">${warnings}</div>
-                            <div class="stat-label">היתרים</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 hide-mobile">
-                        <div class="stat-item">
-                            <div class="stat-number" style="color: #17a2b8;">${committee}</div>
-                            <div class="stat-label">ועדות</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 hide-mobile">
-                        <div class="stat-item">
-                            <div class="stat-number" style="color: #f39c12;">${info}</div>
-                            <div class="stat-label">תיקי מידע</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // חיפוש פרויקטים
-        function searchProjects() {
-            const searchInput = document.getElementById('searchInput');
-            if (!searchInput || !allProjects.length) return;
             
-            const searchTerm = searchInput.value.trim().toLowerCase();
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.toggle('active', tab.textContent === stage);
+            });
 
-            if (!searchTerm) {
-                loadStage(currentStage);
-                return;
-            }
+            filterProjects();
+        }
+
+        function populateFilters() {
+            const engineers = [...new Set(allProjects.map(p => p.engineer))].sort();
+            const teamLeaders = [...new Set(allProjects.map(p => p.team_leader))].sort();
+            const cities = [...new Set(allProjects.map(p => p.city))].sort();
+
+            populateSelect('engineerFilter', engineers);
+            populateSelect('teamLeaderFilter', teamLeaders);
+            populateSelect('cityFilter', cities);
+        }
+
+        function populateSelect(selectId, options) {
+            const select = document.getElementById(selectId);
+            options.forEach(option => {
+                if (option) {
+                    const opt = document.createElement('option');
+                    opt.value = option;
+                    opt.textContent = option;
+                    select.appendChild(opt);
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('searchInput').addEventListener('input', filterProjects);
+            document.getElementById('engineerFilter').addEventListener('change', filterProjects);
+            document.getElementById('teamLeaderFilter').addEventListener('change', filterProjects);
+            document.getElementById('cityFilter').addEventListener('change', filterProjects);
+        }
+
+        function filterProjects() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const engineerFilter = document.getElementById('engineerFilter').value;
+            const teamLeaderFilter = document.getElementById('teamLeaderFilter').value;
+            const cityFilter = document.getElementById('cityFilter').value;
 
             filteredProjects = allProjects.filter(project => {
-                return (
-                    (project.project_name && project.project_name.toLowerCase().includes(searchTerm)) ||
-                    (project.request_number && project.request_number.toLowerCase().includes(searchTerm)) ||
-                    (project.info_file_number && project.info_file_number.toLowerCase().includes(searchTerm)) ||
-                    (project.city && project.city.toLowerCase().includes(searchTerm)) ||
-                    (project.engineer && project.engineer.toLowerCase().includes(searchTerm)) ||
-                    (project.team_leader && project.team_leader.toLowerCase().includes(searchTerm)) ||
-                    (project.entrepreneur_name && project.entrepreneur_name.toLowerCase().includes(searchTerm)) ||
-                    (project.architect && project.architect.toLowerCase().includes(searchTerm)) ||
-                    (project.notes && project.notes.toLowerCase().includes(searchTerm))
-                );
+                // Stage filter
+                if (currentStage !== "הכל" && project.stage !== currentStage) {
+                    return false;
+                }
+
+                // Search filter
+                if (searchTerm && !searchMatches(project, searchTerm)) {
+                    return false;
+                }
+
+                // Engineer filter
+                if (engineerFilter && project.engineer !== engineerFilter) {
+                    return false;
+                }
+
+                // Team leader filter
+                if (teamLeaderFilter && project.team_leader !== teamLeaderFilter) {
+                    return false;
+                }
+
+                // City filter
+                if (cityFilter && project.city !== cityFilter) {
+                    return false;
+                }
+
+                return true;
             });
 
-            updateProjectsDisplay();
-            updateStatistics();
+            displayProjects();
+            updateStats();
         }
 
-        // ניקוי חיפוש
-        function clearSearch() {
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.value = '';
-            }
-            loadStage(currentStage);
+        function searchMatches(project, searchTerm) {
+            const searchFields = [
+                'project_name', 'request_number', 'info_file_number',
+                'city', 'engineer', 'team_leader', 'entrepreneur_name',
+                'architect', 'notes'
+            ];
+
+            return searchFields.some(field => 
+                project[field] && project[field].toLowerCase().includes(searchTerm)
+            );
         }
 
-        // טעינת תצוגת ראשי צוותים
-        function loadTeamLeadersView() {
-            if (!database || allProjects.length === 0) {
-                showUploadView();
+        function displayProjects() {
+            const container = document.getElementById('projectsGrid');
+            const noResults = document.getElementById('noResults');
+            const projectCount = document.getElementById('projectCount');
+
+            if (filteredProjects.length === 0) {
+                container.style.display = 'none';
+                noResults.style.display = 'block';
+                projectCount.textContent = 'לא נמצאו פרויקטים';
                 return;
             }
 
-            const teamLeaders = [...new Set(allProjects.map(p => p.team_leader).filter(Boolean))];
-            
-            if (teamLeaders.length === 0) {
-                document.getElementById('main-content').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        לא נמצאו ראשי צוותים
-                    </div>
-                `;
-                return;
-            }
+            container.style.display = 'grid';
+            noResults.style.display = 'none';
+            projectCount.textContent = `סך הכל: ${filteredProjects.length} פרויקטים`;
 
-            let tabsHtml = '<div class="mobile-tabs"><ul class="nav nav-tabs border-0">';
-            let contentHtml = '';
-
-            teamLeaders.forEach((leader, index) => {
-                const activeClass = index === 0 ? 'active' : '';
-                const projects = allProjects.filter(p => p.team_leader === leader);
-
-                tabsHtml += `
-                    <li class="nav-item">
-                        <button class="nav-link ${activeClass}" onclick="loadTeamLeaderProjects('${leader}', ${index})">
-                            ${leader} (${projects.length})
-                        </button>
-                    </li>
-                `;
-
-                contentHtml += `
-                    <div id="leader-content-${index}" class="leader-content ${index === 0 ? '' : 'd-none'}">
-                        ${generateProjectsList(projects)}
-                    </div>
-                `;
+            container.innerHTML = '';
+            filteredProjects.forEach(project => {
+                const projectCard = createProjectCard(project);
+                container.appendChild(projectCard);
             });
-
-            tabsHtml += '</ul></div>';
-
-            const fullHtml = `
-                <div class="mb-3">
-                    <h4><i class="fas fa-users text-primary"></i> ראשי צוותים</h4>
-                </div>
-                ${tabsHtml}
-                ${contentHtml}
-            `;
-
-            document.getElementById('main-content').innerHTML = fullHtml;
         }
 
-        // טעינת פרויקטים לראש צוות ספציפי
-        function loadTeamLeaderProjects(teamLeader, index) {
-            document.querySelectorAll('.mobile-tabs .nav-link').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            const targetTab = document.querySelector(`button[onclick="loadTeamLeaderProjects('${teamLeader}', ${index})"]`);
-            if (targetTab) {
-                targetTab.classList.add('active');
-            }
+        function createProjectCard(project) {
+            const card = document.createElement('div');
+            card.className = `project-card ${getProjectStatus(project)}`;
 
-            document.querySelectorAll('.leader-content').forEach(content => {
-                content.classList.add('d-none');
-            });
-            const currentContent = document.getElementById(`leader-content-${index}`);
-            if (currentContent) {
-                currentContent.classList.remove('d-none');
-            }
-        }
-
-        // טעינת תצוגת צוותי עירייה
-        function loadCityTeamsView() {
-            if (!database || allProjects.length === 0) {
-                showUploadView();
-                return;
-            }
-
-            const cityTeams = [...new Set(allProjects.map(p => p.city_team).filter(Boolean))];
-            
-            if (cityTeams.length === 0) {
-                document.getElementById('main-content').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        לא נמצאו צוותי עירייה
+            card.innerHTML = `
+                <div class="project-title">${project.project_name}</div>
+                
+                <div class="project-info">
+                    <div class="info-item">
+                        <div class="info-label">מס' בקשה</div>
+                        <div class="info-value">${project.request_number}</div>
                     </div>
-                `;
-                return;
-            }
-
-            let tabsHtml = '<div class="mobile-tabs"><ul class="nav nav-tabs border-0">';
-            let contentHtml = '';
-
-            cityTeams.forEach((team, index) => {
-                const activeClass = index === 0 ? 'active' : '';
-                const relevantProjects = allProjects.filter(p => 
-                    p.city_team === team && 
-                    (p.stage === 'נפתח לפני החלטת ועדה' || p.stage === 'בדיקה סופית')
-                );
-
-                tabsHtml += `
-                    <li class="nav-item">
-                        <button class="nav-link ${activeClass}" onclick="loadCityTeamProjects('${team}', ${index})">
-                            ${team} (${relevantProjects.length})
-                        </button>
-                    </li>
-                `;
-
-                const inspectors = {};
-                relevantProjects.forEach(project => {
-                    if (!inspectors[project.engineer]) {
-                        inspectors[project.engineer] = [];
-                    }
-                    inspectors[project.engineer].push(project);
-                });
-
-                contentHtml += `
-                    <div id="team-content-${index}" class="team-content ${index === 0 ? '' : 'd-none'}">
-                        ${generateInspectorsList(inspectors)}
+                    <div class="info-item">
+                        <div class="info-label">מס' תיק מידע</div>
+                        <div class="info-value">${project.info_file_number}</div>
                     </div>
-                `;
-            });
-
-            tabsHtml += '</ul></div>';
-
-            const fullHtml = `
-                <div class="mb-3">
-                    <h4><i class="fas fa-city text-primary"></i> צוותי עירייה</h4>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        מציג פרויקטים בשלבים: "נפתח לפני החלטת ועדה" ו"בדיקה סופית"
+                    <div class="info-item">
+                        <div class="info-label">שלב רישוי</div>
+                        <div class="info-value">${project.stage}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">מהות הבקשה</div>
+                        <div class="info-value">${project.request_types}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">מהנדס רישוי</div>
+                        <div class="info-value">${project.engineer}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">ראש צוות</div>
+                        <div class="info-value">${project.team_leader}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">חברת ניהול</div>
+                        <div class="info-value">${project.management_company}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">יזם</div>
+                        <div class="info-value">${project.entrepreneur_name}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">אדריכל</div>
+                        <div class="info-value">${project.architect}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">עיר</div>
+                        <div class="info-value">${project.city}</div>
                     </div>
                 </div>
-                ${tabsHtml}
-                ${contentHtml}
+
+                <div class="project-dates">
+                    <div class="dates-grid">
+                        <div class="date-item">
+                            <div class="date-label">תאריך קבלת תיק מידע</div>
+                            <div class="date-value">${formatDate(project.date)}</div>
+                        </div>
+                        <div class="date-item">
+                            <div class="date-label">תאריך פתיחת בקשה</div>
+                            <div class="date-value">${formatDate(project.opening_date)}</div>
+                        </div>
+                        <div class="date-item">
+                            <div class="date-label">תאריך סטטוס רישוי</div>
+                            <div class="date-value">${formatDate(project.status_date)}</div>
+                        </div>
+                        <div class="date-item">
+                            <div class="date-label">תאריך החלטת ועדה</div>
+                            <div class="date-value">${formatDate(project.committee_date)}</div>
+                        </div>
+                        <div class="date-item">
+                            <div class="date-label">תאריך תוקף היתר</div>
+                            <div class="date-value">${formatDate(project.permit_validity_date)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                ${project.notes ? `<div style="margin-top: 15px; padding: 10px; background: rgba(102, 126, 234, 0.1); border-radius: 6px;"><strong>הערות:</strong> ${project.notes}</div>` : ''}
             `;
 
-            document.getElementById('main-content').innerHTML = fullHtml;
+            return card;
         }
 
-        // טעינת פרויקטים לצוות עירייה ספציפי
-        function loadCityTeamProjects(cityTeam, index) {
-            document.querySelectorAll('.mobile-tabs .nav-link').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            const targetTab = document.querySelector(`button[onclick="loadCityTeamProjects('${cityTeam}', ${index})"]`);
-            if (targetTab) {
-                targetTab.classList.add('active');
-            }
-
-            document.querySelectorAll('.team-content').forEach(content => {
-                content.classList.add('d-none');
-            });
-            const currentContent = document.getElementById(`team-content-${index}`);
-            if (currentContent) {
-                currentContent.classList.remove('d-none');
-            }
-        }
-
-        // יצירת רשימת פרויקטים
-        function generateProjectsList(projects) {
-            if (projects.length === 0) {
-                return `
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        אין פרויקטים
-                    </div>
-                `;
-            }
-
-            let html = '';
-            projects.forEach(project => {
-                const statusClass = project.status ? `status-${project.status}` : '';
-
-                html += `
-                    <div class="project-card ${statusClass}">
-                        <div class="project-header">
-                            ${project.project_name || 'ללא שם'}
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">מס' בקשה:</span>
-                            <span class="value">${project.request_number || '-'}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">שלב:</span>
-                            <span class="value">
-                                <span class="badge ${getStageColor(project.stage)}">${project.stage || '-'}</span>
-                            </span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">מהנדס:</span>
-                            <span class="value">${project.engineer || '-'}</span>
-                        </div>
-                        <div class="project-detail">
-                            <span class="label">עיר:</span>
-                            <span class="value">${project.city || '-'}</span>
-                        </div>
-                    </div>
-                `;
-            });
-
-            return html;
-        }
-
-        // יצירת רשימת בודקים
-        function generateInspectorsList(inspectors) {
-            if (Object.keys(inspectors).length === 0) {
-                return `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        אין בודקים עם פרויקטים בשלבים הרלוונטיים
-                    </div>
-                `;
-            }
-
-            let html = '';
-
-            for (const [inspector, projects] of Object.entries(inspectors)) {
-                if (projects.length === 0) continue;
-
-                const beforeCommittee = projects.filter(p => p.stage === 'נפתח לפני החלטת ועדה').length;
-                const finalCheck = projects.filter(p => p.stage === 'בדיקה סופית').length;
-
-                html += `
-                    <div class="project-card" style="background-color: #f8f9fa; border-right-color: #6c757d;">
-                        <div class="project-header" style="color: #495057;">
-                            <i class="fas fa-user"></i> בודק: ${inspector}
-                            <div class="mt-2">
-                                <span class="badge bg-danger me-2">${beforeCommittee} לפני ועדה</span>
-                                <span class="badge bg-success">${finalCheck} בדיקה סופית</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                projects.forEach(project => {
-                    const statusClass = project.stage === 'נפתח לפני החלטת ועדה' ? 'status-approaching' : '';
-
-                    html += `
-                        <div class="project-card ${statusClass}" style="margin-right: 1rem;">
-                            <div class="project-header" style="font-size: 1rem;">
-                                ${project.project_name || 'ללא שם'}
-                            </div>
-                            <div class="project-detail">
-                                <span class="label">מס' בקשה:</span>
-                                <span class="value">${project.request_number || '-'}</span>
-                            </div>
-                            <div class="project-detail">
-                                <span class="label">שלב:</span>
-                                <span class="value">
-                                    <span class="badge ${project.stage === 'נפתח לפני החלטת ועדה' ? 'bg-danger' : 'bg-success'}">
-                                        ${project.stage}
-                                    </span>
-                                </span>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            return html;
-        }
-
-        // פונקציות עזר
         function formatDate(dateStr) {
-            if (!dateStr) return '-';
+            if (!dateStr) return 'לא צוין';
             
             try {
                 const date = new Date(dateStr);
                 return date.toLocaleDateString('he-IL');
-            } catch {
+            } catch (e) {
                 return dateStr;
             }
         }
 
-        function showLoading() {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.classList.remove('d-none');
-            }
-        }
-
-        function hideLoading() {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.classList.add('d-none');
-            }
-        }
-
-        function showError(message) {
-            const alertHtml = `
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            const mainContent = document.getElementById('main-content');
-            if (mainContent) {
-                mainContent.insertAdjacentHTML('afterbegin', alertHtml);
-            }
-        }
-
-        function showSuccess(message) {
-            const alertHtml = `
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="fas fa-check-circle"></i>
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            const mainContent = document.getElementById('main-content');
-            if (mainContent) {
-                mainContent.insertAdjacentHTML('afterbegin', alertHtml);
-            }
-        }
-
-        // כפתור חזרה למעלה
-        function initializeBackToTop() {
-            const backToTopBtn = document.getElementById('back-to-top');
-            if (!backToTopBtn) return;
-
-            window.addEventListener('scroll', () => {
-                if (window.pageYOffset > 300) {
-                    backToTopBtn.style.display = 'block';
-                } else {
-                    backToTopBtn.style.display = 'none';
+        function getProjectStatus(project) {
+            const now = new Date();
+            
+            // Check opening date expiry (45 business days)
+            if (project.opening_date) {
+                const openingDate = new Date(project.opening_date);
+                const expiryDate = addBusinessDays(openingDate, 45);
+                
+                if (now > expiryDate) {
+                    return 'expired';
                 }
-            });
-        }
-
-        function scrollToTop() {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        }
-
-        // תמיכה במקש Enter בחיפוש
-        document.addEventListener('keypress', function(e) {
-            if (e.target.id === 'searchInput' && e.key === 'Enter') {
-                searchProjects();
+                
+                const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+                if (daysUntilExpiry <= 15) {
+                    return 'approaching';
+                }
             }
-        });
+
+            // Check permit validity expiry
+            if (project.permit_validity_date) {
+                const permitDate = new Date(project.permit_validity_date);
+                const permitExpiry = new Date(permitDate);
+                permitExpiry.setFullYear(permitExpiry.getFullYear() + 1);
+                
+                if (now > permitExpiry) {
+                    return 'warning';
+                }
+            }
+
+            // Check committee date expiry (2 years)
+            if (project.committee_date) {
+                const committeeDate = new Date(project.committee_date);
+                const committeeExpiry = new Date(committeeDate);
+                committeeExpiry.setFullYear(committeeExpiry.getFullYear() + 2);
+                
+                const daysUntilExpiry = Math.ceil((committeeExpiry - now) / (1000 * 60 * 60 * 24));
+                if (daysUntilExpiry <= 180) {
+                    return 'committee_expiring';
+                }
+            }
+
+            // Check info date expiry (2 years)
+            if (project.date) {
+                const infoDate = new Date(project.date);
+                const infoExpiry = new Date(infoDate);
+                infoExpiry.setFullYear(infoExpiry.getFullYear() + 2);
+                
+                const daysUntilExpiry = Math.ceil((infoExpiry - now) / (1000 * 60 * 60 * 24));
+                if (daysUntilExpiry <= 120) {
+                    return 'info_expiring';
+                }
+            }
+
+            return '';
+        }
+
+        function addBusinessDays(startDate, businessDays) {
+            const result = new Date(startDate);
+            let daysAdded = 0;
+
+            while (daysAdded < businessDays) {
+                result.setDate(result.getDate() + 1);
+                
+                // Skip weekends (Friday=5, Saturday=6 in Israel)
+                if (result.getDay() !== 5 && result.getDay() !== 6) {
+                    daysAdded++;
+                }
+            }
+
+            return result;
+        }
+
+        function updateStats() {
+            const statsContainer = document.getElementById('stats');
+            const totalProjects = filteredProjects.length;
+            
+            const stageStats = stages.slice(1).reduce((acc, stage) => {
+                acc[stage] = filteredProjects.filter(p => p.stage === stage).length;
+                return acc;
+            }, {});
+
+            const statusStats = {
+                expired: filteredProjects.filter(p => getProjectStatus(p) === 'expired').length,
+                warning: filteredProjects.filter(p => getProjectStatus(p) === 'warning').length,
+                approaching: filteredProjects.filter(p => getProjectStatus(p) === 'approaching').length,
+                committee_expiring: filteredProjects.filter(p => getProjectStatus(p) === 'committee_expiring').length,
+                info_expiring: filteredProjects.filter(p => getProjectStatus(p) === 'info_expiring').length
+            };
+
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${totalProjects}</div>
+                    <div class="stat-label">סך הכל פרויקטים</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${statusStats.expired}</div>
+                    <div class="stat-label">תאריכים שפגו</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${statusStats.approaching}</div>
+                    <div class="stat-label">מתקרבים לפקיעה</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stageStats['בדיקה סופית'] || 0}</div>
+                    <div class="stat-label">בדיקה סופית</div>
+                </div>
+            `;
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Add this section at the end to demonstrate how to load real data
+        /*
+        // Real implementation would connect to your SQLite database
+        // You would need a backend API to serve the data
+        async function loadRealData() {
+            try {
+                const response = await fetch('/api/projects');
+                const data = await response.json();
+                allProjects = data;
+                filteredProjects = [...allProjects];
+                populateFilters();
+                displayProjects();
+                updateStats();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+        */
     </script>
 </body>
 </html>
