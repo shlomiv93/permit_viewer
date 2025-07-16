@@ -93,7 +93,7 @@ python app.py
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `gunicorn app:app`
 
-### משתני סביבה (אופציונלי)
+### משתני סביבה 
 
 ```
 DATABASE_URL=licensing_system.db  # נתיב למסד הנתונים
@@ -148,26 +148,7 @@ PORT=5000                         # פורט (Render יגדיר אוטומטית
 - צבעים נגישים
 - Alt texts
 
-## פתרון בעיות נפוצות
 
-### בעיית חיבור למסד נתונים
-```python
-# וודא שהקובץ licensing_system.db קיים
-# או שהמשתנה DATABASE_URL מוגדר נכון
-```
-
-### בעיית encoding עברית
-```python
-# וודא שהקובץ נשמר ב-UTF-8
-# הגדר charset במסד הנתונים
-```
-
-### בעיית performance
-```python
-# הוסף אינדקסים למסד הנתונים:
-# CREATE INDEX idx_stage ON projects(stage);
-# CREATE INDEX idx_team_leader ON projects(team_leader);
-```
 
 ## תמיכה והרחבות
 
@@ -181,6 +162,7 @@ PORT=5000                         # פורט (Render יגדיר אוטומטית
 ## רישיון
 
 פרויקט פנימי לארגון. כל הזכויות שמורות.
+BARORIAN ARCH
 
 ---
 
