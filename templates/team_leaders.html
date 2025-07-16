@@ -1,1 +1,159 @@
+{% extends "base.html" %}
 
+{% block title %}ראשי צוותים - מערכת ניהול רישוי{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Page Header -->
+        <div class="card">
+            <div class="card-header">
+                <h1 class="mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    פרויקטים לפי ראשי צוותים
+                </h1>
+            </div>
+        </div>
+
+        <!-- Team Leader Filter -->
+        <div class="filter-section">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="team_leader" class="form-label">בחר ראש צוות:</label>
+                    <select class="form-select" name="team_leader" id="team_leader" onchange="this.form.submit()">
+                        <option value="">כל ראשי הצוותים</option>
+                        {% for team_leader in team_leaders %}
+                        <option value="{{ team_leader }}" {{ 'selected' if team_leader == current_team_leader }}>
+                            {{ team_leader }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <!-- Team Leaders Accordion -->
+        <div class="accordion" id="teamLeadersAccordion">
+            {% for team_leader, projects in projects_by_leader.items() %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading{{ loop.index }}">
+                    <button class="accordion-button {{ 'collapsed' if not current_team_leader or current_team_leader != team_leader }}" 
+                            type="button" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#collapse{{ loop.index }}" 
+                            aria-expanded="{{ 'true' if current_team_leader == team_leader else 'false' }}" 
+                            aria-controls="collapse{{ loop.index }}">
+                        <i class="fas fa-user-tie me-2"></i>
+                        ראש צוות: {{ team_leader }}
+                        <span class="badge bg-primary ms-2">{{ projects|length }} פרויקטים</span>
+                    </button>
+                </h2>
+                <div id="collapse{{ loop.index }}" 
+                     class="accordion-collapse collapse {{ 'show' if current_team_leader == team_leader or not current_team_leader }}" 
+                     aria-labelledby="heading{{ loop.index }}" 
+                     data-bs-parent="#teamLeadersAccordion">
+                    <div class="accordion-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>שם הפרויקט</th>
+                                        <th>מס' בקשה</th>
+                                        <th>מס' תיק מידע</th>
+                                        <th>תאריך קבלת תיק מידע</th>
+                                        <th>תאריך פתיחת בקשה</th>
+                                        <th>תאריך סטטוס רישוי</th>
+                                        <th>תאריך החלטת ועדה</th>
+                                        <th>תאריך תוקף היתר</th>
+                                        <th>שלב רישוי</th>
+                                        <th>מהות הבקשה</th>
+                                        <th>מהנדס רישוי אחראי</th>
+                                        <th>חברת ניהול</th>
+                                        <th>שם היזם</th>
+                                        <th>אדריכל אחראי</th>
+                                        <th>עיר</th>
+                                        <th>הערות</th>
+                                        <th>פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for project in projects %}
+                                    <tr class="{% if project.row_color %}row-{{ project.row_color }}{% endif %}">
+                                        <td class="fw-bold">{{ project.project_name or '-' }}</td>
+                                        <td>{{ project.request_number or '-' }}</td>
+                                        <td>{{ project.info_file_number or '-' }}</td>
+                                        <td>{{ project.formatted_info_date|safe or project.date or '-' }}</td>
+                                        <td>{{ project.formatted_opening_date|safe or project.opening_date or '-' }}</td>
+                                        <td>{{ project.status_date or '-' }}</td>
+                                        <td>{{ project.formatted_committee_date|safe or project.committee_date or '-' }}</td>
+                                        <td>{{ project.formatted_permit_date|safe or project.permit_validity_date or '-' }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ project.stage or '-' }}</span>
+                                        </td>
+                                        <td>{{ project.request_types or '-' }}</td>
+                                        <td>{{ project.engineer or '-' }}</td>
+                                        <td>{{ project.management_company or '-' }}</td>
+                                        <td>{{ project.entrepreneur_name or '-' }}</td>
+                                        <td>{{ project.architect or '-' }}</td>
+                                        <td>{{ project.city or '-' }}</td>
+                                        <td>
+                                            {% if project.notes %}
+                                            <div class="text-truncate" style="max-width: 200px;" title="{{ project.notes }}">
+                                                {{ project.notes }}
+                                            </div>
+                                            {% else %}
+                                            -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('project_detail', project_id=project.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                                צפייה
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="stats-grid mt-4">
+            {% for team_leader, projects in projects_by_leader.items() %}
+            <div class="stat-card">
+                <div class="stat-number">{{ projects|length }}</div>
+                <div class="stat-label">{{ team_leader }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add tooltips to truncated text
+    const truncatedElements = document.querySelectorAll('.text-truncate[title]');
+    truncatedElements.forEach(function(element) {
+        new bootstrap.Tooltip(element);
+    });
+
+    // Smooth scrolling to accordion items
+    const accordionButtons = document.querySelectorAll('.accordion-button');
+    accordionButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            setTimeout(() => {
+                this.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 150);
+        });
+    });
+});
+</script>
+{% endblock %}
