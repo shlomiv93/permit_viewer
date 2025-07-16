@@ -1,1 +1,234 @@
+{% extends "base.html" %}
 
+{% block title %}כל הפרויקטים - מערכת ניהול רישוי{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Page Header -->
+        <div class="card">
+            <div class="card-header">
+                <h1 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    כל הפרויקטים
+                </h1>
+            </div>
+        </div>
+
+        <!-- Status Legend -->
+        <div class="status-legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(255, 182, 193, 0.7);"></div>
+                <span>תאריך פתיחת בקשה מתקרב לפקיעה (15 ימי עסקים)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(255, 165, 0, 0.7);"></div>
+                <span>תיק מידע מתקרב לפקיעה (4 חודשים)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(255, 255, 204, 0.7);"></div>
+                <span>תאריך תוקף היתר פג</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(173, 216, 230, 0.7);"></div>
+                <span>תאריך החלטת ועדה מתקרב לפקיעה (6 חודשים)</span>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="filter-section">
+            <form method="GET" class="row g-3">
+                <!-- Search -->
+                <div class="col-md-4">
+                    <div class="search-container">
+                        <input type="text" class="form-control" name="search" 
+                               value="{{ search }}" placeholder="חיפוש פרויקט...">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                </div>
+
+                <!-- Stage Filter -->
+                <div class="col-md-3">
+                    <select class="form-select" name="stage">
+                        {% for stage in stages %}
+                        <option value="{{ stage }}" {{ 'selected' if stage == current_stage }}>
+                            {{ stage }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Sort By -->
+                <div class="col-md-3">
+                    <select class="form-select" name="sort">
+                        <option value="project_name" {{ 'selected' if sort_by == 'project_name' }}>שם הפרויקט</option>
+                        <option value="request_number" {{ 'selected' if sort_by == 'request_number' }}>מס' בקשה</option>
+                        <option value="date" {{ 'selected' if sort_by == 'date' }}>תאריך קבלת תיק מידע</option>
+                        <option value="opening_date" {{ 'selected' if sort_by == 'opening_date' }}>תאריך פתיחת בקשה</option>
+                        <option value="stage" {{ 'selected' if sort_by == 'stage' }}>שלב רישוי</option>
+                        <option value="engineer" {{ 'selected' if sort_by == 'engineer' }}>מהנדס רישוי</option>
+                        <option value="team_leader" {{ 'selected' if sort_by == 'team_leader' }}>ראש צוות</option>
+                    </select>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i>
+                        סנן
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Project Count -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">
+                <i class="fas fa-calculator me-2 text-primary"></i>
+                סך הכל פרויקטים: <span class="badge bg-primary">{{ project_count }}</span>
+            </h5>
+            
+            {% if search %}
+            <small class="text-muted">
+                תוצאות חיפוש עבור: <strong>"{{ search }}"</strong>
+            </small>
+            {% endif %}
+        </div>
+
+        <!-- Projects Table -->
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>שם הפרויקט</th>
+                                <th>מס' בקשה</th>
+                                <th>מס' תיק מידע</th>
+                                <th>תאריך קבלת תיק מידע</th>
+                                <th>תאריך פתיחת בקשה</th>
+                                <th>תאריך סטטוס רישוי</th>
+                                <th>תאריך החלטת ועדה</th>
+                                <th>תאריך תוקף היתר</th>
+                                <th>שלב רישוי</th>
+                                <th>מהות הבקשה</th>
+                                <th>מהנדס רישוי אחראי</th>
+                                <th>חברת ניהול</th>
+                                <th>שם היזם</th>
+                                <th>אדריכל אחראי</th>
+                                <th>ראש צוות</th>
+                                <th>עיר</th>
+                                <th>הערות</th>
+                                <th>פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for project in projects %}
+                            <tr class="{% if project.row_color %}row-{{ project.row_color }}{% endif %}">
+                                <td class="fw-bold">{{ project.project_name or '-' }}</td>
+                                <td>{{ project.request_number or '-' }}</td>
+                                <td>{{ project.info_file_number or '-' }}</td>
+                                <td>{{ project.formatted_info_date|safe or project.date or '-' }}</td>
+                                <td>{{ project.formatted_opening_date|safe or project.opening_date or '-' }}</td>
+                                <td>{{ project.status_date or '-' }}</td>
+                                <td>{{ project.formatted_committee_date|safe or project.committee_date or '-' }}</td>
+                                <td>{{ project.formatted_permit_date|safe or project.permit_validity_date or '-' }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ project.stage or '-' }}</span>
+                                </td>
+                                <td>{{ project.request_types or '-' }}</td>
+                                <td>{{ project.engineer or '-' }}</td>
+                                <td>{{ project.management_company or '-' }}</td>
+                                <td>{{ project.entrepreneur_name or '-' }}</td>
+                                <td>{{ project.architect or '-' }}</td>
+                                <td>{{ project.team_leader or '-' }}</td>
+                                <td>{{ project.city or '-' }}</td>
+                                <td>
+                                    {% if project.notes %}
+                                    <div class="text-truncate" style="max-width: 200px;" title="{{ project.notes }}">
+                                        {{ project.notes }}
+                                    </div>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('project_detail', project_id=project.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                        צפייה
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="18" class="text-center py-5">
+                                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">לא נמצאו פרויקטים</h5>
+                                    {% if search %}
+                                    <p class="text-muted">נסה לשנות את מילות החיפוש או הסרגלים</p>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        {% if projects %}
+        <div class="stats-grid mt-4">
+            <div class="stat-card">
+                <div class="stat-number">{{ project_count }}</div>
+                <div class="stat-label">סך הכל פרויקטים</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">
+                    {{ projects|selectattr('stage', 'equalto', 'הליך פתיחה')|list|length }}
+                </div>
+                <div class="stat-label">בהליך פתיחה</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">
+                    {{ projects|selectattr('stage', 'equalto', 'נפתח לפני החלטת ועדה')|list|length }}
+                </div>
+                <div class="stat-label">לפני החלטת ועדה</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">
+                    {{ projects|selectattr('stage', 'equalto', 'נמסר היתר')|list|length }}
+                </div>
+                <div class="stat-label">נמסר היתר</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit search form on Enter
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.form.submit();
+            }
+        });
+    }
+
+    // Auto-submit form when select values change
+    const selects = document.querySelectorAll('select[name="stage"], select[name="sort"]');
+    selects.forEach(function(select) {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+
+    // Add tooltips to truncated text
+    const truncatedElements = document.querySelectorAll('.text-truncate[title]');
+    truncatedElements.forEach(function(element
