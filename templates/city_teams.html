@@ -1,1 +1,211 @@
+{% extends "base.html" %}
 
+{% block title %}צוותי עירייה - מערכת ניהול רישוי{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Page Header -->
+        <div class="card">
+            <div class="card-header">
+                <h1 class="mb-0">
+                    <i class="fas fa-city me-2"></i>
+                    פרויקטים לפני ועדה ובדיקה סופית לפי צוותים בעירייה
+                </h1>
+            </div>
+        </div>
+
+        <!-- Status Legend for City Teams -->
+        <div class="status-legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(255, 182, 193, 0.7);"></div>
+                <span>נפתח לפני החלטת ועדה</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(144, 238, 144, 0.7);"></div>
+                <span>בדיקה סופית</span>
+            </div>
+        </div>
+
+        <!-- City Team Filter -->
+        <div class="filter-section">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="city_team" class="form-label">בחר צוות עירייה:</label>
+                    <select class="form-select" name="city_team" id="city_team" onchange="this.form.submit()">
+                        <option value="">כל הצוותים</option>
+                        {% for city_team in city_teams %}
+                        <option value="{{ city_team }}" {{ 'selected' if city_team == current_city_team }}>
+                            {{ city_team }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <div class="d-flex align-items-end h-100">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            מציג רק פרויקטים בשלבים: {{ relevant_stages|join(', ') }}
+                        </small>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- City Teams Accordion -->
+        <div class="accordion" id="cityTeamsAccordion">
+            {% for city_team, engineers in projects_by_team.items() %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="cityHeading{{ loop.index }}">
+                    <button class="accordion-button {{ 'collapsed' if current_city_team and current_city_team != city_team }}" 
+                            type="button" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#cityCollapse{{ loop.index }}" 
+                            aria-expanded="{{ 'true' if not current_city_team or current_city_team == city_team else 'false' }}" 
+                            aria-controls="cityCollapse{{ loop.index }}">
+                        <i class="fas fa-building me-2"></i>
+                        צוות {{ city_team }}
+                        <span class="badge bg-primary ms-2">
+                            {{ engineers.values() | map('length') | sum }} פרויקטים
+                        </span>
+                    </button>
+                </h2>
+                <div id="cityCollapse{{ loop.index }}" 
+                     class="accordion-collapse collapse {{ 'show' if not current_city_team or current_city_team == city_team }}" 
+                     aria-labelledby="cityHeading{{ loop.index }}" 
+                     data-bs-parent="#cityTeamsAccordion">
+                    <div class="accordion-body">
+                        
+                        <!-- Engineers Sub-Accordion -->
+                        <div class="accordion" id="engineersAccordion{{ loop.index }}">
+                            {% for engineer, projects in engineers.items() %}
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="engineerHeading{{ loop.index0 }}_{{ loop.index }}">
+                                    <button class="accordion-button collapsed" 
+                                            type="button" 
+                                            data-bs-toggle="collapse" 
+                                            data-bs-target="#engineerCollapse{{ loop.index0 }}_{{ loop.index }}" 
+                                            aria-expanded="false" 
+                                            aria-controls="engineerCollapse{{ loop.index0 }}_{{ loop.index }}">
+                                        <i class="fas fa-user-hard-hat me-2"></i>
+                                        בודק: {{ engineer }}
+                                        <span class="badge bg-secondary ms-2">{{ projects|length }} פרויקטים</span>
+                                    </button>
+                                </h3>
+                                <div id="engineerCollapse{{ loop.index0 }}_{{ loop.index }}" 
+                                     class="accordion-collapse collapse" 
+                                     aria-labelledby="engineerHeading{{ loop.index0 }}_{{ loop.index }}" 
+                                     data-bs-parent="#engineersAccordion{{ loop.index0 }}">
+                                    <div class="accordion-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>שם הפרויקט</th>
+                                                        <th>מס' בקשה</th>
+                                                        <th>תאריך פתיחת בקשה</th>
+                                                        <th>תאריך החלטת ועדה</th>
+                                                        <th>מהות הבקשה</th>
+                                                        <th>חברת ניהול</th>
+                                                        <th>אדריכל אחראי</th>
+                                                        <th>ראש צוות</th>
+                                                        <th>הערות</th>
+                                                        <th>פעולות</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for project in projects %}
+                                                    <tr class="{% if project.row_color %}row-{{ project.row_color }}{% endif %}">
+                                                        <td class="fw-bold">{{ project.project_name or '-' }}</td>
+                                                        <td>{{ project.request_number or '-' }}</td>
+                                                        <td>{{ project.formatted_opening_date|safe or project.opening_date or '-' }}</td>
+                                                        <td>{{ project.formatted_committee_date|safe or project.committee_date or '-' }}</td>
+                                                        <td>{{ project.request_types or '-' }}</td>
+                                                        <td>{{ project.management_company or '-' }}</td>
+                                                        <td>{{ project.architect or '-' }}</td>
+                                                        <td>{{ project.team_leader or '-' }}</td>
+                                                        <td>
+                                                            {% if project.notes %}
+                                                            <div class="text-truncate" style="max-width: 150px;" title="{{ project.notes }}">
+                                                                {{ project.notes }}
+                                                            </div>
+                                                            {% else %}
+                                                            -
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            <a href="{{ url_for('project_detail', project_id=project.id) }}" 
+                                                               class="btn btn-sm btn-outline-primary">
+                                                                <i class="fas fa-eye"></i>
+                                                                צפייה
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="stats-grid mt-4">
+            {% for city_team, engineers in projects_by_team.items() %}
+            <div class="stat-card">
+                <div class="stat-number">{{ engineers.values() | map('length') | sum }}</div>
+                <div class="stat-label">צוות {{ city_team }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add tooltips to truncated text
+    const truncatedElements = document.querySelectorAll('.text-truncate[title]');
+    truncatedElements.forEach(function(element) {
+        new bootstrap.Tooltip(element);
+    });
+
+    // Smooth scrolling to accordion items
+    const accordionButtons = document.querySelectorAll('.accordion-button');
+    accordionButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            setTimeout(() => {
+                this.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 150);
+        });
+    });
+
+    // Sort projects within each engineer group by stage (committee first, then final)
+    const engineerTables = document.querySelectorAll('table tbody');
+    engineerTables.forEach(function(tbody) {
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.sort(function(a, b) {
+            const aHasCommittee = a.classList.contains('row-stage_committee');
+            const bHasCommittee = b.classList.contains('row-stage_committee');
+            
+            if (aHasCommittee && !bHasCommittee) return -1;
+            if (!aHasCommittee && bHasCommittee) return 1;
+            return 0;
+        });
+        
+        // Re-append sorted rows
+        rows.forEach(function(row) {
+            tbody.appendChild(row);
+        });
+    });
+});
+</script>
+{% endblock %}
