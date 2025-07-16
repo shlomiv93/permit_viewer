@@ -231,4 +231,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add tooltips to truncated text
     const truncatedElements = document.querySelectorAll('.text-truncate[title]');
-    truncatedElements.forEach(function(element
+    truncatedElements.forEach(function(element) {
+        new bootstrap.Tooltip(element);
+    });
+});
+</script>
