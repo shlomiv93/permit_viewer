@@ -1,1 +1,11 @@
-
+services:
+  - type: web
+    name: licensing-system
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DATABASE_URL
+        value: licensing_system.db
+      - key: PYTHON_VERSION
+        value: 3.11.0
