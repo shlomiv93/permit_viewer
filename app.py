@@ -19,40 +19,90 @@ def get_db_connection():
 
 def init_database():
     """יצירת מסד הנתונים אם לא קיים"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS projects (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_name TEXT NOT NULL,
+                request_number TEXT NOT NULL,
+                info_file_number TEXT NOT NULL,
+                date TEXT NOT NULL,
+                opening_date TEXT,
+                status_date TEXT,
+                committee_date TEXT,
+                permit_validity_date TEXT,
+                team_leader TEXT NOT NULL,
+                engineer TEXT NOT NULL,
+                stage TEXT NOT NULL,
+                request_types TEXT,
+                management_company TEXT,
+                entrepreneur_name TEXT,
+                architect TEXT,
+                city TEXT,
+                notes TEXT,
+                city_team TEXT,
+                info_date_extension INTEGER DEFAULT 0,
+                opening_date_extension INTEGER DEFAULT 0,
+                status_date_extension INTEGER DEFAULT 0,
+                committee_date_extension INTEGER DEFAULT 0,
+                permit_validity_date_extension INTEGER DEFAULT 0
+            )
+        """)
+        
+        # Check if table is empty and add sample data
+        cursor.execute("SELECT COUNT(*) FROM projects")
+        count = cursor.fetchone()[0]
+        
+        if count == 0:
+            print("Database is empty. Adding sample data...")
+            add_sample_data(cursor)
+        
+        conn.commit()
+        conn.close()
+        print("Database initialized successfully")
+        
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+
+def add_sample_data(cursor):
+    """הוספת נתונים לדוגמה"""
+    sample_projects = [
+        ('פרויקט מגורים רמת גן', 'RG-2024-001', 'TIK-001-2024', '2024-01-15', '2024-02-01', 
+         '2024-02-15', '2024-03-01', '2024-04-01', 'דוד כהן', 'שרה לוי', 'הליך פתיחה', 
+         'בנייה חדשה', 'חברת ניהול אלפא', 'משה ישראלי', 'רחל אדריכלית', 'רמת גן', 
+         'פרויקט דוגמה ראשון', 'מרכז'),
+        ('מתחם מסחרי תל אביב', 'TA-2024-002', 'TIK-002-2024', '2024-01-20', '2024-02-10', 
+         '2024-02-25', '2024-03-15', '2024-04-15', 'מיכאל גולן', 'יוסי מהנדס', 'נפתח לפני החלטת ועדה', 
+         'היתר בניה', 'חברת ניהול בטא', 'אברהם יזם', 'דני אדריכל', 'תל אביב', 
+         'פרויקט מסחרי גדול במרכז העיר', 'דרום'),
+        ('שיפוץ בית ספר חיפה', 'HF-2024-003', 'TIK-003-2024', '2024-02-01', '2024-02-20', 
+         '2024-03-05', '2024-03-25', '2024-05-01', 'רות מנהלת', 'עמי טכנאי', 'בדיקה סופית', 
+         'שינויים במהלך הביצוע (סמכות מה"ע)', 'חברת ניהול גמא', 'עיריית חיפה', 
+         'נועה מתכננת', 'חיפה', 'שיפוץ כיתות לימוד ומעבדות', 'צפון'),
+        ('פארק ציבורי באר שבע', 'BS-2024-004', 'TIK-004-2024', '2024-02-10', '2024-03-01', 
+         '2024-03-15', '2024-04-01', '2024-05-15', 'אלי ראש צוות', 'נירה מהנדסת', 'נמסר היתר', 
+         'היתר שינויים', 'חברת ניהול דלתא', 'קרן קיימת לישראל', 'גיל נופי', 'באר שבע', 
+         'פארק עירוני חדש עם מתקני ספורט', 'מזרח'),
+        ('מגדל משרדים נתניה', 'NT-2024-005', 'TIK-005-2024', '2024-02-15', '2024-03-10', 
+         '2024-03-25', '2024-04-10', '2024-06-01', 'דוד כהן', 'מאיה בודקת', 'בדיקה מרחבית אחרי ועדה', 
+         'תמא 38', 'חברת ניהול הה', 'חברת בנייה גדולה', 'יעקב מעצב', 'נתניה', 
+         'מגדל 25 קומות במרכז העיר', 'פרויקטים מיוחדים')
+    ]
     
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS projects (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            project_name TEXT NOT NULL,
-            request_number TEXT NOT NULL,
-            info_file_number TEXT NOT NULL,
-            date TEXT NOT NULL,
-            opening_date TEXT,
-            status_date TEXT,
-            committee_date TEXT,
-            permit_validity_date TEXT,
-            team_leader TEXT NOT NULL,
-            engineer TEXT NOT NULL,
-            stage TEXT NOT NULL,
-            request_types TEXT,
-            management_company TEXT,
-            entrepreneur_name TEXT,
-            architect TEXT,
-            city TEXT,
-            notes TEXT,
-            city_team TEXT,
-            info_date_extension INTEGER DEFAULT 0,
-            opening_date_extension INTEGER DEFAULT 0,
-            status_date_extension INTEGER DEFAULT 0,
-            committee_date_extension INTEGER DEFAULT 0,
-            permit_validity_date_extension INTEGER DEFAULT 0
-        )
-    """)
+    for project in sample_projects:
+        cursor.execute("""
+            INSERT INTO projects (
+                project_name, request_number, info_file_number, date, opening_date,
+                status_date, committee_date, permit_validity_date, team_leader,
+                engineer, stage, request_types, management_company, entrepreneur_name,
+                architect, city, notes, city_team
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, project)
     
-    conn.commit()
-    conn.close()
+    print(f"Added {len(sample_projects)} sample projects to the database.")
 
 # שלבי הרישוי
 LICENSING_STAGES = [
@@ -783,7 +833,9 @@ def api_stats():
         'team_leaders_stats': [dict(row) for row in team_leaders_stats]
     })
 
+# Initialize database when the module is imported
+init_database()
+
 if __name__ == '__main__':
-    init_database()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
