@@ -1,1 +1,279 @@
+{% extends "base.html" %}
 
+{% block title %}{{ project.project_name }} - פרטי פרויקט{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Page Header -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">
+                    <i class="fas fa-project-diagram me-2"></i>
+                    פרטי פרויקט: {{ project.project_name }}
+                </h1>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    חזרה לרשימה
+                </a>
+            </div>
+        </div>
+
+        <!-- Project Details Grid -->
+        <div class="project-detail-grid">
+            
+            <!-- Basic Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        פרטים בסיסיים
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="detail-item">
+                        <div class="detail-label">שם הפרויקט</div>
+                        <div class="detail-value">{{ project.project_name or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">מספר בקשה</div>
+                        <div class="detail-value">{{ project.request_number or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">מספר תיק מידע</div>
+                        <div class="detail-value">{{ project.info_file_number or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">שלב רישוי</div>
+                        <div class="detail-value">
+                            <span class="badge bg-primary fs-6">{{ project.stage or 'לא מוגדר' }}</span>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">עיר</div>
+                        <div class="detail-value">{{ project.city or 'לא מוגדר' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dates Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        תאריכים
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="detail-item">
+                        <div class="detail-label">תאריך קבלת תיק מידע</div>
+                        <div class="detail-value">{{ project.formatted_info_date|safe or project.date or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">תאריך פתיחת בקשה</div>
+                        <div class="detail-value">{{ project.formatted_opening_date|safe or project.opening_date or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">תאריך סטטוס רישוי</div>
+                        <div class="detail-value">{{ project.status_date or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">תאריך החלטת ועדה</div>
+                        <div class="detail-value">{{ project.formatted_committee_date|safe or project.committee_date or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">תאריך תוקף היתר</div>
+                        <div class="detail-value">{{ project.formatted_permit_date|safe or project.permit_validity_date or 'לא מוגדר' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        צוות הפרויקט
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="detail-item">
+                        <div class="detail-label">ראש צוות</div>
+                        <div class="detail-value">{{ project.team_leader or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">מהנדס רישוי אחראי</div>
+                        <div class="detail-value">{{ project.engineer or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">צוות עירייה</div>
+                        <div class="detail-value">{{ project.city_team or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">אדריכל אחראי</div>
+                        <div class="detail-value">{{ project.architect or 'לא מוגדר' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-briefcase me-2"></i>
+                        פרטים עסקיים
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="detail-item">
+                        <div class="detail-label">מהות הבקשה</div>
+                        <div class="detail-value">{{ project.request_types or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">חברת ניהול</div>
+                        <div class="detail-value">{{ project.management_company or 'לא מוגדר' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">שם היזם</div>
+                        <div class="detail-value">{{ project.entrepreneur_name or 'לא מוגדר' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            {% if project.notes %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-sticky-note me-2"></i>
+                        הערות
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="detail-item">
+                        <div class="detail-value" style="white-space: pre-wrap;">{{ project.notes }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Extension Information -->
+            {% if project.info_date_extension or project.opening_date_extension or project.committee_date_extension or project.permit_validity_date_extension %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        הארכות תאריכים
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if project.info_date_extension and project.info_date_extension != 0 %}
+                    <div class="detail-item">
+                        <div class="detail-label">הארכת תיק מידע</div>
+                        <div class="detail-value">
+                            {% if project.info_date_extension == -90 %}
+                                90 ימי עסקים מיוחד
+                            {% elif project.info_date_extension < -1000 %}
+                                {{ (project.info_date_extension|abs) - 1000 }} ימי עסקים
+                            {% elif project.info_date_extension < -100000000 %}
+                                תאריך יעד ספציפי
+                            {% else %}
+                                {{ project.info_date_extension }} ימים
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if project.opening_date_extension and project.opening_date_extension != 0 %}
+                    <div class="detail-item">
+                        <div class="detail-label">הארכת פתיחת בקשה</div>
+                        <div class="detail-value">
+                            {% if project.opening_date_extension == -90 %}
+                                90 ימי עסקים מיוחד
+                            {% elif project.opening_date_extension < -1000 %}
+                                {{ (project.opening_date_extension|abs) - 1000 }} ימי עסקים
+                            {% elif project.opening_date_extension < -100000000 %}
+                                תאריך יעד ספציפי
+                            {% else %}
+                                {{ project.opening_date_extension }} ימים
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if project.committee_date_extension and project.committee_date_extension != 0 %}
+                    <div class="detail-item">
+                        <div class="detail-label">הארכת החלטת ועדה</div>
+                        <div class="detail-value">
+                            {% if project.committee_date_extension == -90 %}
+                                90 ימי עסקים מיוחד
+                            {% elif project.committee_date_extension < -1000 %}
+                                {{ (project.committee_date_extension|abs) - 1000 }} ימי עסקים
+                            {% elif project.committee_date_extension < -100000000 %}
+                                תאריך יעד ספציפי
+                            {% else %}
+                                {{ project.committee_date_extension }} ימים
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if project.permit_validity_date_extension and project.permit_validity_date_extension != 0 %}
+                    <div class="detail-item">
+                        <div class="detail-label">הארכת תוקף היתר</div>
+                        <div class="detail-value">
+                            {% if project.permit_validity_date_extension == -90 %}
+                                90 ימי עסקים מיוחד
+                            {% elif project.permit_validity_date_extension < -1000 %}
+                                {{ (project.permit_validity_date_extension|abs) - 1000 }} ימי עסקים
+                            {% elif project.permit_validity_date_extension < -100000000 %}
+                                תאריך יעד ספציפי
+                            {% else %}
+                                {{ project.permit_validity_date_extension }} ימים
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mt-4">
+            <div class="card-body text-center">
+                <h6 class="card-title">פעולות מהירות</h6>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-1"></i>
+                        כל הפרויקטים
+                    </a>
+                    <a href="{{ url_for('team_leaders', team_leader=project.team_leader) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-users me-1"></i>
+                        פרויקטים של {{ project.team_leader }}
+                    </a>
+                    {% if project.city_team %}
+                    <a href="{{ url_for('city_teams', city_team=project.city_team) }}" class="btn btn-outline-info">
+                        <i class="fas fa-city me-1"></i>
+                        צוות {{ project.city_team }}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add smooth transitions to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(function(card, index) {
+        card.style.animationDelay = (index * 0.1) + 's';
+        card.classList.add('fade-in');
+    });
+});
+</script>
+{% endblock %}
