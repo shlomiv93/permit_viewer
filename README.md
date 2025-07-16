@@ -81,7 +81,6 @@ pip install -r requirements.txt
 python app.py
 ```
 
-האתר יהיה זמין בכתובת: `http://localhost:5000`
 
 ## פריסה ב-Render
 
