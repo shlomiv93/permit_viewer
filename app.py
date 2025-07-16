@@ -59,6 +59,9 @@ def init_database():
         if count == 0:
             print("Database is empty. Adding sample data...")
             add_sample_data(cursor)
+            print("Sample data added successfully!")
+        else:
+            print(f"Database already contains {count} projects.")
         
         conn.commit()
         conn.close()
@@ -66,6 +69,43 @@ def init_database():
         
     except Exception as e:
         print(f"Database initialization error: {e}")
+        # Try to create an empty database at least
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS projects (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    project_name TEXT NOT NULL,
+                    request_number TEXT NOT NULL,
+                    info_file_number TEXT NOT NULL,
+                    date TEXT NOT NULL,
+                    opening_date TEXT,
+                    status_date TEXT,
+                    committee_date TEXT,
+                    permit_validity_date TEXT,
+                    team_leader TEXT NOT NULL,
+                    engineer TEXT NOT NULL,
+                    stage TEXT NOT NULL,
+                    request_types TEXT,
+                    management_company TEXT,
+                    entrepreneur_name TEXT,
+                    architect TEXT,
+                    city TEXT,
+                    notes TEXT,
+                    city_team TEXT,
+                    info_date_extension INTEGER DEFAULT 0,
+                    opening_date_extension INTEGER DEFAULT 0,
+                    status_date_extension INTEGER DEFAULT 0,
+                    committee_date_extension INTEGER DEFAULT 0,
+                    permit_validity_date_extension INTEGER DEFAULT 0
+                )
+            """)
+            conn.commit()
+            conn.close()
+            print("Empty database created successfully")
+        except Exception as e2:
+            print(f"Failed to create empty database: {e2}")
 
 def add_sample_data(cursor):
     """הוספת נתונים לדוגמה"""
